@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="el" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}KidsLogix{% endblock %}</title>
+
+  <!-- Google Material Icons (NOT Symbols) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined">
+
+  <link rel="stylesheet" href="/static/style.css?v=6" />
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+  <div class="app-shell">
+    <!-- TOP NAVBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="icon-btn topbar-btn" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
+          <span class="material-icons-outlined">menu</span>
+        </button>
+
+        <div class="brand">
+          <span class="brand-title">KidsLogix</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="icon-btn topbar-btn" id="themeToggle" type="button" aria-label="Toggle dark mode" title="Dark mode">
+          <span class="material-icons-outlined" id="themeIcon">dark_mode</span>
+        </button>
+
+        <a class="icon-btn topbar-btn" href="/auth/logout" aria-label="Logout" title="Logout">
+          <span class="material-icons-outlined">logout</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- MAIN LAYOUT: SIDEBAR + CONTENT -->
+    <div class="layout">
+      <aside class="sidebar" id="sidebar">
+        <nav class="nav">
+          {% set path = request.url.path %}
+
+          <a class="nav-item {% if path == '/' %}active{% endif %}" href="/">
+            <span class="material-icons-outlined nav-ic">grid_view</span>
+            <span class="nav-txt">Dashboard</span>
+          </a>
+
+          <a class="nav-item {% if path.startswith('/students') and path != '/students/new' %}active{% endif %}" href="/students">
+            <span class="material-icons-outlined nav-ic">groups</span>
+            <span class="nav-txt">Μαθητές</span>
+          </a>
+
+          <a class="nav-item {% if path == '/students/new' %}active{% endif %}" href="/students/new">
+            <span class="material-icons-outlined nav-ic">person_add</span>
+            <span class="nav-txt">Νέος Μαθητής</span>
+          </a>
+
+          <a class="nav-item {% if path.startswith('/schedule') %}active{% endif %}" href="/schedule">
+            <span class="material-icons-outlined nav-ic">calendar_month</span>
+            <span class="nav-txt">Πρόγραμμα</span>
+          </a>
+
+          <a class="nav-item {% if page=='holidays' %}active{% endif %}" href="/holidays">
+            <span class="material-icons-outlined">event_busy</span>
+            <span>Αργίες</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="meta-row">
+            <span class="material-icons-outlined">person</span>
+            <span>Logged in: <b>{{ user.username if user else '-' }}</b></span>
+          </div>
+          <div class="meta-row">
+            <span class="material-icons-outlined">shield</span>
+            <span>Role: <b>{{ user.role if user else '-' }}</b></span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // THEME
+      const root = document.documentElement;
+      const savedTheme = localStorage.getItem("theme");
+      const themeIcon = document.getElementById("themeIcon");
+
+      function applyTheme(t){
+        root.setAttribute("data-theme", t);
+        if (themeIcon){
+          themeIcon.textContent = (t === "dark") ? "light_mode" : "dark_mode";
+        }
+      }
+
+      applyTheme(savedTheme || "light");
+
+      const themeToggle = document.getElementById("themeToggle");
+      if (themeToggle){
+        themeToggle.addEventListener("click", () => {
+          const current = root.getAttribute("data-theme") || "light";
+          const next = current === "dark" ? "light" : "dark";
+          localStorage.setItem("theme", next);
+          applyTheme(next);
+        });
+      }
+
+      // SIDEBAR TOGGLE
+      const sidebar = document.getElementById("sidebar");
+      const sidebarToggle = document.getElementById("sidebarToggle");
+
+      function setCollapsed(isCollapsed){
+        document.body.classList.toggle("sidebar-collapsed", isCollapsed);
+        localStorage.setItem("sidebarCollapsed", isCollapsed ? "1" : "0");
+      }
+
+      const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "1";
+      setCollapsed(savedCollapsed);
+
+      if (sidebarToggle){
+        sidebarToggle.addEventListener("click", () => {
+          const nowCollapsed = !document.body.classList.contains("sidebar-collapsed");
+          setCollapsed(nowCollapsed);
+        });
+      }
+
+      // Close sidebar on small screens when clicking outside
+      document.addEventListener("click", (e) => {
+        const isMobile = window.matchMedia("(max-width: 900px)").matches;
+        if (!isMobile) return;
+        if (!sidebar) return;
+
+        const clickedToggle = sidebarToggle && sidebarToggle.contains(e.target);
+        const clickedInsideSidebar = sidebar.contains(e.target);
+
+        if (!clickedToggle && !clickedInsideSidebar && !document.body.classList.contains("sidebar-collapsed")){
+          setCollapsed(true);
+        }
+      });
+    })();
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

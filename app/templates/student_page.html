@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}{{ student.full_name }} | KidsLogix{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">{{ student.full_name }}</h1>
+    <p class="page-subtitle">
+      AMKA: <b>{{ student.amka }}</b> ·
+      Κέντρο: <b>{{ centers.get(student.center, student.center) }}</b>
+    </p>
+  </div>
+
+  <div class="page-actions">
+    <form method="post" action="/students/{{ student.amka }}/delete"
+          onsubmit="return confirm('Σίγουρα διαγραφή μαθητή; Θα διαγραφούν και οι συνεδρίες/πληρωμές του.');">
+      <button class="btn btn-danger" type="submit" title="Διαγραφή μαθητή">
+        <span class="material-icons-outlined">delete</span>
+        Διαγραφή
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Βασικά στοιχεία -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      <span class="material-icons-outlined">badge</span>
+      <h2>Βασικά Στοιχεία</h2>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="kv">
+      <div>Όνομα</div><div>{{ student.first_name }}</div>
+      <div>Επώνυμο</div><div>{{ student.last_name }}</div>
+      <div>Γενέθλια</div><div>{{ fmt_date_gr(student.date_of_birth) }}</div>
+      <div>Γονέας</div><div>{{ student.parent_name or '-' }}</div>
+      <div>Τηλέφωνο</div><div>{{ student.parent_phone or '-' }}</div>
+      <div>Λήξη Γνωμάτευσης</div>
+      <div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <b>{{ fmt_date_gr(student.assessment_expiry_date) }}</b>
+
+          <form method="post" action="/students/{{ student.amka }}/assessment/renew" style="display:flex; gap:8px; align-items:center;">
+            <input type="date" name="assessment_expiry_date" required>
+            <button class="btn btn-xs btn-primary" type="submit">
+              <span class="material-icons-outlined">update</span>
+              Ανανέωση
+            </button>
+          </form>
+        </div>
+      </div>
+      <div>Σχόλια</div><div>{{ student.admin_comment or '-' }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="grid-2-cards">
+  <!-- Συνεδρίες ανά υπηρεσία -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">
+        <span class="material-icons-outlined">playlist_add_check</span>
+        <h2>Συνεδρίες ανά Υπηρεσία</h2>
+      </div>
+    </div>
+
+    <div class="card-body">
+      {% if services_info and services_info|length > 0 %}
+        <div class="table">
+          <div class="tr th">
+            <div>Υπηρεσία</div>
+            <div>Σύνολο</div>
+            <div>Ολοκληρωμένες</div>
+            <div>Υπόλοιπο</div>
+          </div>
+          {% for x in services_info %}
+            <div class="tr">
+              <div>{{ x.service.name }}</div>
+              <div>{{ x.total }}</div>
+              <div>{{ x.completed }}</div>
+              <div><b>{{ x.remaining }}</b></div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">Δεν υπάρχουν υπηρεσίες για τον μαθητή.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Πληρωμές -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">
+        <span class="material-icons-outlined">payments</span>
+        <h2>Πληρωμές</h2>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <form class="form-grid compact" method="post" action="/students/{{ student.amka }}/payments/new">
+        <div class="grid-2">
+          <label class="field">
+            <span>Ημερομηνία</span>
+            <input type="date" name="payment_date" required>
+          </label>
+
+          <label class="field">
+            <span>Ποσό (€)</span>
+            <input type="text" name="amount" placeholder="π.χ. 50" required>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Σχόλιο (προαιρετικό)</span>
+          <input type="text" name="comment" placeholder="π.χ. Φεβρουάριος">
+        </label>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">
+            <span class="material-icons-outlined">add</span>
+            Προσθήκη
+          </button>
+        </div>
+      </form>
+
+      <div class="divider"></div>
+
+      {% if payments and payments|length > 0 %}
+        <div class="table">
+          <div class="tr th">
+            <div>Ημ/νία</div>
+            <div>Ποσό</div>
+            <div>Σχόλιο</div>
+          </div>
+          {% for p in payments %}
+            <div class="tr">
+              <div>{{ fmt_date_gr(p.payment_date) }}</div>
+              <div>{{ "%.2f"|format(p.amount_cents / 100) }}€</div>
+              <div>{{ p.comment or '-' }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">Δεν υπάρχουν πληρωμές.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Πρόγραμμα μαθητή -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      <span class="material-icons-outlined">event</span>
+      <h2>Πρόγραμμα Μαθητή</h2>
+    </div>
+  </div>
+
+  <div class="card-body">
+    {% if appointments and appointments|length > 0 %}
+      <div class="table">
+        <div class="tr th">
+          <div>Ημ/νία</div>
+          <div>Ώρα</div>
+          <div>Υπηρεσία</div>
+          <div>Κατάσταση</div>
+          <div>Ενέργειες</div>
+        </div>
+
+        {% for ap in appointments %}
+          <div class="tr">
+            <div>{{ fmt_date_gr(ap.day) }}</div>
+            <div>{{ ap.start_time.strftime("%H:%M") }}</div>
+            <div>{{ ap.service.name if ap.service else ap.service_id }}</div>
+
+            <div class="status {{ ap.status }}">{{ ap.status }}</div>
+
+            <div class="row-actions">
+              <!-- Ολοκλήρωση -->
+              <form method="post" action="/schedule/{{ ap.id }}/status" class="inline-form">
+                <input type="hidden" name="status" value="completed">
+                <input type="hidden" name="next" value="/students/{{ student.amka }}">
+                <button class="icon-pill icon-success" type="submit" title="Ολοκληρώθηκε"
+                        {% if ap.status == "completed" %}disabled{% endif %}>
+                  <span class="material-icons-outlined">check</span>
+                </button>
+              </form>
+
+              <!-- Ακύρωση -->
+              <form method="post" action="/schedule/{{ ap.id }}/status" class="inline-form"
+                    onsubmit="return confirm('Σίγουρα ακύρωση συνεδρίας;');">
+                <input type="hidden" name="status" value="canceled">
+                <input type="hidden" name="next" value="/students/{{ student.amka }}">
+                <button class="icon-pill icon-danger" type="submit" title="Ακύρωση"
+                        {% if ap.status == "canceled" %}disabled{% endif %}>
+                  <span class="material-icons-outlined">close</span>
+                </button>
+              </form>
+
+              <!-- Επαναφορά σε scheduled -->
+              <form method="post" action="/schedule/{{ ap.id }}/status" class="inline-form">
+                <input type="hidden" name="status" value="scheduled">
+                <input type="hidden" name="next" value="/students/{{ student.amka }}">
+                <button class="icon-pill" type="submit" title="Επαναφορά σε προγραμματισμένη"
+                        {% if ap.status == "scheduled" %}disabled{% endif %}>
+                  <span class="material-icons-outlined">history</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">Δεν υπάρχουν συνεδρίες.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

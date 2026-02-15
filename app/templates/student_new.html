@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Προσθήκη Μαθητή | KidsLogix{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Add Student</h1>
+    <p class="page-subtitle">Καταχώρησε νέο μαθητή και τις συνεδρίες ανά υπηρεσία.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      <span class="material-icons-outlined">person_add</span>
+      <h2>Στοιχεία Μαθητή</h2>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <form class="form-grid" method="post" action="/students/new">
+
+      <div class="grid-3">
+        <label class="field">
+          <span>AMKA</span>
+          <input type="text" name="amka" placeholder="π.χ. 12345678901" required>
+        </label>
+
+        <label class="field">
+          <span>Κέντρο</span>
+          <select name="center" required>
+            <option value="Giannitsa">Γιαννιτσά</option>
+            <option value="KryaVrisi">Κρύα Βρύση</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Γενέθλια (προαιρετικό)</span>
+          <input type="date" name="date_of_birth">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label class="field">
+          <span>Όνομα</span>
+          <input type="text" name="first_name" required>
+        </label>
+
+        <label class="field">
+          <span>Επώνυμο</span>
+          <input type="text" name="last_name" required>
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label class="field">
+          <span>Όνομα Γονέα</span>
+          <input type="text" name="parent_name" placeholder="προαιρετικό">
+        </label>
+
+        <label class="field">
+          <span>Τηλέφωνο Επικοινωνίας</span>
+          <input type="text" name="parent_phone" placeholder="π.χ. 69xxxxxxxx">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label class="field">
+          <span>Λήξη Γνωμάτευσης</span>
+          <input type="date" name="assessment_expiry_date">
+        </label>
+
+        <label class="field">
+          <span>Σχόλια</span>
+          <textarea name="admin_comment" rows="4" placeholder="προαιρετικό"></textarea>
+        </label>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="card" style="margin:0;">
+        <div class="card-head">
+          <div class="card-title">
+            <span class="material-icons-outlined">playlist_add</span>
+            <h2>Συνεδρίες ανά Υπηρεσία</h2>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="grid-2">
+            {% for s in services %}
+              <label class="field">
+                <span>{{ s.name }}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  name="sessions_{{ s.id }}"
+                  placeholder="0"
+                >
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          <span class="material-icons-outlined">save</span>
+          Αποθήκευση
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

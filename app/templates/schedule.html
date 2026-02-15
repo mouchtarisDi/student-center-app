@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block title %}Πρόγραμμα | KidsLogix{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Weekly Program</h1>
+    <p class="page-subtitle">Οργάνωσε συνεδρίες ανά εβδομάδα και κέντρο.</p>
+  </div>
+</div>
+
+<!-- ============ ADD SESSION (BATCH) CARD ============ -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      <span class="material-icons-outlined">add_circle</span>
+      <h2>Add Sessions</h2>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <form class="form-grid" method="post" action="/schedule/create-batch">
+      <div class="grid-2">
+        <label class="field">
+          <span>Αναζήτηση μαθητή</span>
+          <input id="studentSearch" type="text" placeholder="Πληκτρολόγησε όνομα ή ΑΜΚΑ…" autocomplete="off">
+        </label>
+
+        <label class="field">
+          <span>Μαθητής</span>
+          <select id="studentSelect" name="student_amka" required>
+            <option value="" disabled selected>Επιλογή μαθητή</option>
+            {% for st in students %}
+              <option
+                value="{{ st.amka }}"
+                data-search="{{ (st.full_name ~ ' ' ~ st.amka)|lower }}"
+              >
+                {{ st.full_name }} ({{ st.amka }})
+              </option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div class="grid-3">
+        <label class="field">
+          <span>Υπηρεσία</span>
+          <select id="serviceSelect" name="service_id" required>
+            <option value="" disabled selected>Επιλογή υπηρεσίας</option>
+            {% for s in services %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Ημερομηνία (1η συνεδρία)</span>
+          <input type="date" name="start_day" required>
+        </label>
+
+        <label class="field">
+          <span>Ώρα</span>
+          <input type="time" name="start_time" required>
+        </label>
+      </div>
+
+      <div class="grid-3">
+        <label class="field">
+          <span>Πλήθος συνεδριών</span>
+          <input id="countInput" type="number" name="count" min="1" max="200" value="1" required>
+        </label>
+
+        <label class="field">
+          <span>Διάρκεια (λεπτά)</span>
+          <input type="number" name="duration_min" min="10" max="180" value="45">
+        </label>
+
+        <label class="field checkbox">
+          <span>Skip Holidays</span>
+          <input type="checkbox" name="skip_holidays" checked>
+        </label>
+      </div>
+
+      <div class="muted" id="remainingLabel" style="margin-top:6px;">
+        Διαθέσιμες συνεδρίες: —
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          <span class="material-icons-outlined">save</span>
+          Δημιουργία
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ WEEK VIEW CARD ============ -->
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      <span class="material-icons-outlined">calendar_month</span>
+      <h2>Προβολή Εβδομάδας</h2>
+    </div>
+
+    <form class="filters" method="get" action="/schedule">
+      <label class="field-inline">
+        <span>Κέντρο</span>
+        <select name="center">
+          {% for key, label in centers.items() %}
+            <option value="{{ key }}" {% if center == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field-inline">
+        <span>Εβδομάδα (Δευτέρα)</span>
+        <input type="date" name="week" value="{{ week_start_str }}">
+      </label>
+
+      <button class="btn" type="submit" title="Προβολή">
+        <span class="material-icons-outlined">search</span>
+        Προβολή
+      </button>
+    </form>
+  </div>
+
+  <div class="card-body">
+    <div class="week-grid">
+      <div class="week-grid-head">
+        <div class="col-time"></div>
+        {% for d in days %}
+          <div class="col-day">
+            <div class="day-name">{{ d.label }}</div>
+            <div class="day-date">{{ d.date_str }}</div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="week-grid-body">
+        {% for slot in time_slots %}
+          <div class="row-time">{{ slot }}</div>
+
+          {% for d in days %}
+            {% set key = d.date_iso ~ "|" ~ slot %}
+            <div class="cell">
+              {% if grid.get(key) %}
+                <div class="ap-stack">
+                  {% for ap in grid.get(key) %}
+                    <div class="ap-chip ap-{{ ap.status }}">
+                      <div class="ap-top">
+                        <div class="ap-name" title="{{ ap.student_name }}">{{ ap.student_name }}</div>
+                        <div class="ap-sub" title="{{ ap.service_name }}">{{ ap.service_name }}</div>
+                      </div>
+
+                      <div class="ap-actions">
+                        <!-- Complete -->
+                        <form method="post" action="/schedule/{{ ap.id }}/status" class="mini-form" title="Ολοκληρώθηκε">
+                          <input type="hidden" name="status" value="completed">
+                          <button class="icon-round ok" type="submit">
+                            <span class="material-icons-outlined">check</span>
+                          </button>
+                        </form>
+
+                        <!-- Cancel -->
+                        <form method="post" action="/schedule/{{ ap.id }}/status" class="mini-form" title="Ακύρωση"
+                              onsubmit="return confirm('Σίγουρα ακύρωση;');">
+                          <input type="hidden" name="status" value="canceled">
+                          <button class="icon-round danger" type="submit">
+                            <span class="material-icons-outlined">close</span>
+                          </button>
+                        </form>
+
+                        <!-- Back to scheduled -->
+                        {% if ap.status != "scheduled" %}
+                        <form method="post" action="/schedule/{{ ap.id }}/status" class="mini-form" title="Επαναφορά">
+                          <input type="hidden" name="status" value="scheduled">
+                          <button class="icon-round neutral" type="submit">
+                            <span class="material-icons-outlined">undo</span>
+                          </button>
+                        </form>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= CSS (μικρό “patch” για να χωράνε όλα) ======= -->
+<style>
+  .ap-stack{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .ap-chip{
+    border:1px solid #cfd8dc;
+    border-radius:14px;
+    padding:8px 10px;
+    background:#f7fbff;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    overflow:hidden;
+  }
+  .ap-chip.ap-completed{ background:#f2fff5; border-color:#b7e3c2; }
+  .ap-chip.ap-canceled{ background:#fff5f5; border-color:#f0b9b9; opacity:0.9; }
+
+  .ap-top{ display:flex; flex-direction:column; gap:2px; }
+  .ap-name{
+    font-weight:700;
+    font-size:13px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .ap-sub{
+    font-size:12px;
+    opacity:0.85;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .ap-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+  .mini-form{ margin:0; }
+  .icon-round{
+    width:34px;
+    height:34px;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .icon-round span{ font-size:18px; }
+  .icon-round.ok{ background:#1b5e20; color:#fff; }
+  .icon-round.danger{ background:#b71c1c; color:#fff; }
+  .icon-round.neutral{ background:#455a64; color:#fff; }
+
+  /* Search input look */
+  #studentSearch{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid #cfd8dc;
+    border-radius:12px;
+    outline:none;
+  }
+</style>
+
+<!-- ======= DATA + JS ======= -->
+<script type="application/json" id="remainingData">
+  {{ remaining_js | safe }}
+</script>
+
+<script>
+  window.addEventListener("DOMContentLoaded", () => {
+    // Remaining map
+    const remainingMap = JSON.parse(
+      document.getElementById("remainingData").textContent || "{}"
+    );
+
+    const stSel = document.querySelector('select[name="student_amka"]');
+    const svcSel = document.querySelector('select[name="service_id"]');
+    const lbl = document.getElementById("remainingLabel");
+    const countInput = document.getElementById("countInput");
+
+    // Student search (filters options)
+    const searchInput = document.getElementById("studentSearch");
+    const options = Array.from(stSel?.options || []);
+    const defaultOpt = options[0];
+
+    function filterStudents() {
+      if (!stSel || !searchInput) return;
+      const q = (searchInput.value || "").trim().toLowerCase();
+
+      // reset
+      stSel.innerHTML = "";
+      stSel.appendChild(defaultOpt);
+
+      if (!q) {
+        for (let i = 1; i < options.length; i++) stSel.appendChild(options[i]);
+        return;
+      }
+
+      for (let i = 1; i < options.length; i++) {
+        const opt = options[i];
+        const hay = (opt.getAttribute("data-search") || opt.textContent || "").toLowerCase();
+        if (hay.includes(q)) stSel.appendChild(opt);
+      }
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener("input", filterStudents);
+    }
+
+    function updateRemaining() {
+      const amka = (stSel?.value || "").trim();
+      const sid = (svcSel?.value || "").trim();
+
+      if (!amka || !sid) {
+        if (lbl) lbl.textContent = "Διαθέσιμες συνεδρίες: —";
+        if (countInput) countInput.removeAttribute("max");
+        return;
+      }
+
+      const key = `${amka}|${sid}`;
+      const remaining = remainingMap[key];
+
+      if (lbl) {
+        lbl.textContent = "Διαθέσιμες συνεδρίες: " + (remaining === undefined ? "—" : remaining);
+      }
+
+      // constrain count max if we know remaining
+      if (countInput && remaining !== undefined) {
+        countInput.max = String(Math.max(Number(remaining), 1));
+        if (Number(countInput.value) > Number(countInput.max)) {
+          countInput.value = countInput.max;
+        }
+      } else if (countInput) {
+        countInput.removeAttribute("max");
+      }
+    }
+
+    if (stSel) stSel.addEventListener("change", updateRemaining);
+    if (svcSel) svcSel.addEventListener("change", updateRemaining);
+
+    updateRemaining();
+  });
+</script>
+
+{% endblock %}

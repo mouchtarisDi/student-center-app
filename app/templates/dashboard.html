@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | KidsLogix{% endblock %}
+
+{% block content %}
+<div class="dash-header">
+  <h1 class="dash-title">Welcome to KidsLogix</h1>
+  <p class="dash-subtitle">Here you can manage all your student information and sessions.</p>
+</div>
+
+<div class="dash-stats">
+  <a class="stat-card" href="/students" aria-label="Students list">
+    <div class="stat-icon stat-icon-blue">
+      <span class="material-icons-outlined">group</span>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">Total Students</div>
+      <div class="stat-value">{{ total_students }}</div>
+    </div>
+    <span class="material-icons-outlined stat-arrow">chevron_right</span>
+  </a>
+
+  <a class="stat-card" href="/students" aria-label="Reports expiring">
+    <div class="stat-icon stat-icon-orange">
+      <span class="material-icons-outlined">pending_actions</span>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">Reports Expiring</div>
+      <div class="stat-value">{{ reports_expiring }}</div>
+    </div>
+    <span class="material-icons-outlined stat-arrow">chevron_right</span>
+  </a>
+
+  <a class="stat-card" href="/students" aria-label="Payments pending">
+    <div class="stat-icon stat-icon-green">
+      <span class="material-icons-outlined">payments</span>
+    </div>
+    <div class="stat-body">
+      <div class="stat-label">Payments Pending</div>
+      <div class="stat-value">{{ payments_pending }}</div>
+    </div>
+    <span class="material-icons-outlined stat-arrow">chevron_right</span>
+  </a>
+</div>
+
+<div class="dash-grid">
+  <section class="panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <span class="material-icons-outlined">schedule</span>
+        <h2>Today's Program Overview</h2>
+      </div>
+      <a class="panel-link" href="/schedule">
+        Open schedule <span class="material-icons-outlined">chevron_right</span>
+      </a>
+    </div>
+
+    <div class="panel-body">
+      {% if todays_appointments and todays_appointments|length > 0 %}
+        <div class="list">
+          {% for ap in todays_appointments %}
+            <div class="list-row">
+              <div class="time-pill">{{ ap.start_time.strftime("%H:%M") }}</div>
+
+              <div class="list-main">
+                <div class="list-title">{{ ap.student.full_name }}</div>
+                <div class="list-subtitle">{{ ap.service.name }}</div>
+              </div>
+
+              <a class="icon-btn" href="/schedule" title="Go to schedule">
+                <span class="material-icons-outlined">chevron_right</span>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">Δεν υπάρχουν συνεδρίες για σήμερα.</div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="panel-title">
+        <span class="material-icons-outlined">pending_actions</span>
+        <h2>Reports Close to Expire</h2>
+      </div>
+      <a class="panel-link" href="/students">
+        Open students <span class="material-icons-outlined">chevron_right</span>
+      </a>
+    </div>
+
+    <div class="panel-body">
+      {% if reports_list and reports_list|length > 0 %}
+        <div class="list">
+          {% for st in reports_list %}
+            {% set days_left = (st.assessment_expiry_date - today).days %}
+            <div class="list-row">
+              <div class="warn-pill">
+                <span class="material-icons-outlined">warning</span>
+              </div>
+
+              <div class="list-main">
+                <div class="list-title">{{ st.full_name }}</div>
+                <div class="list-subtitle">
+                  Expires in <b>{{ days_left }}</b> days • {{ st.assessment_expiry_date.strftime("%d/%m/%Y") }}
+                </div>
+              </div>
+
+              <a class="icon-btn" href="/students" title="Go to students">
+                <span class="material-icons-outlined">chevron_right</span>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">Δεν υπάρχουν γνωματεύσεις που λήγουν σύντομα.</div>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

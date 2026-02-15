@@ -1,0 +1,51 @@
+<div style="
+  max-width: 820px;
+  width: 100%;
+  background: var(--card-clr);
+  box-shadow: var(--card-shadow);
+  border-radius: 14px;
+  padding: 18px;
+">
+  <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+    <div>
+      <h2 style="margin:0;">{{ student.full_name }}</h2>
+      <p style="margin:6px 0 0 0; color: var(--secondary-text-clr);">
+        Dataset: <b>{{ dataset }}</b>
+      </p>
+    </div>
+
+    <div style="display:flex; gap:8px; align-items:center;">
+      <a
+        href="/students/{{ student.id }}"
+        class="primary-btn"
+        style="padding:8px 10px; text-decoration:none;"
+      >
+        Open full page
+      </a>
+
+      <button
+        type="button"
+        data-modal-close
+        class="primary-btn"
+        style="padding:8px 10px;"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; display:grid; gap:10px;">
+    <div><b>Date of birth:</b> {{ student.date_of_birth or "-" }}</div>
+    <div><b>Parent name:</b> {{ student.parent_name or "-" }}</div>
+    <div><b>Parent phone:</b> {{ student.parent_phone or "-" }}</div>
+    <div><b>Payment date:</b> {{ student.payment_date or "-" }}</div>
+    <div><b>Assessment expiry:</b> {{ student.assessment_expiry_date or "-" }}</div>
+
+    <div>
+      <b>Admin comment:</b>
+      <div style="margin-top:6px; white-space:pre-wrap;">
+        {{ student.admin_comment or "-" }}
+      </div>
+    </div>
+  </div>
+</div>

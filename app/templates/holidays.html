@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Αργίες | KidsLogix{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Holidays</h1>
+    <p class="page-subtitle">Καταχώριση αργιών ανά κέντρο.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head" style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
+    <div class="card-title">
+      <span class="material-icons-outlined">event_busy</span>
+      <h2>Αργίες</h2>
+    </div>
+
+    <form method="get" action="/holidays" class="filters" style="margin:0;">
+      <label class="field-inline">
+        <span>Κέντρο</span>
+        <select name="center" onchange="this.form.submit()">
+          {% for k, v in centers.items() %}
+            <option value="{{ k }}" {% if center == k %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </form>
+  </div>
+
+  <div class="card-body">
+    <form class="form-grid" method="post" action="/holidays/add">
+      <input type="hidden" name="center" value="{{ center }}">
+
+      <div class="grid-3">
+        <label class="field">
+          <span>Ημερομηνία</span>
+          <input type="date" name="day" required>
+        </label>
+
+        <label class="field" style="grid-column: span 2;">
+          <span>Σημείωση (προαιρετικό)</span>
+          <input type="text" name="note" placeholder="π.χ. Καθαρά Δευτέρα">
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          <span class="material-icons-outlined">add</span>
+          Προσθήκη
+        </button>
+      </div>
+    </form>
+
+    <div class="divider"></div>
+
+    {% if holidays and holidays|length > 0 %}
+      <div class="table">
+        <div class="tr th">
+          <div>Ημερομηνία</div>
+          <div>Σημείωση</div>
+          <div></div>
+        </div>
+
+        {% for h in holidays %}
+          <div class="tr">
+            <div>{{ fmt_date_gr(h.day) }}</div>
+            <div>{{ h.note or '-' }}</div>
+            <div style="text-align:right;">
+              <form method="post" action="/holidays/delete" onsubmit="return confirm('Σίγουρα διαγραφή;');" style="display:inline;">
+                <input type="hidden" name="holiday_id" value="{{ h.id }}">
+                <input type="hidden" name="center" value="{{ center }}">
+                <button class="btn btn-danger btn-xs" type="submit">
+                  <span class="material-icons-outlined">delete</span>
+                  Διαγραφή
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">Δεν υπάρχουν αργίες για αυτό το κέντρο.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

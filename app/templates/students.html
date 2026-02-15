@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Μαθητές | KidsLogix{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1 class="page-title">Μαθητές</h1>
+    <p class="page-subtitle">Λίστα μαθητών και γρήγορες ενέργειες.</p>
+  </div>
+
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/students/new">
+      <span class="material-icons-outlined">person_add</span>
+      Προσθήκη Μαθητή
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <div class="card-title">
+      <span class="material-icons-outlined">groups</span>
+      <h2>Λίστα</h2>
+    </div>
+  </div>
+
+  <div class="card-body">
+    {% if students and students|length > 0 %}
+      <div class="student-cards">
+        {% for st in students %}
+          <button
+            type="button"
+            class="student-mini"
+            data-amka="{{ st.amka }}"
+            data-name="{{ st.full_name }}"
+            data-center="{{ centers.get(st.center, st.center) }}"
+            data-parent="{{ st.parent_name or '-' }}"
+            data-phone="{{ st.parent_phone or '-' }}"
+            data-exp="{{ fmt_date_gr(st.assessment_expiry_date) }}"
+          >
+            <div class="mini-title">{{ st.full_name }}</div>
+            <div class="mini-sub">{{ centers.get(st.center, st.center) }}</div>
+            <div class="mini-meta">AMKA: {{ st.amka }}</div>
+          </button>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">Δεν υπάρχουν μαθητές.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="studentModal" aria-hidden="true">
+  <div class="modal-backdrop" data-close="1"></div>
+
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <div class="modal-title">
+        <span class="material-icons-outlined">person</span>
+        <h3 id="modalTitle">Μαθητής</h3>
+      </div>
+      <button class="icon-btn" type="button" data-close="1" aria-label="Close">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="kv">
+        <div>Κέντρο</div><div id="mCenter">-</div>
+        <div>AMKA</div><div id="mAmka">-</div>
+        <div>Γονέας</div><div id="mParent">-</div>
+        <div>Τηλέφωνο</div><div id="mPhone">-</div>
+        <div>Λήξη Γνωμάτευσης</div><div id="mExp">-</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <form id="deleteForm" method="post" action="">
+        <button class="btn btn-danger" type="submit">
+          <span class="material-icons-outlined">delete</span>
+          Διαγραφή
+        </button>
+      </form>
+
+      <a class="btn btn-primary" id="openStudentBtn" href="#">
+        <span class="material-icons-outlined">open_in_new</span>
+        Άνοιγμα Καρτέλας
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function(){
+    const modal = document.getElementById("studentModal");
+    const title = document.getElementById("modalTitle");
+    const mCenter = document.getElementById("mCenter");
+    const mAmka = document.getElementById("mAmka");
+    const mParent = document.getElementById("mParent");
+    const mPhone = document.getElementById("mPhone");
+    const mExp = document.getElementById("mExp");
+    const openBtn = document.getElementById("openStudentBtn");
+    const deleteForm = document.getElementById("deleteForm");
+
+    function openModal(){
+      modal.classList.add("open");
+      modal.setAttribute("aria-hidden","false");
+    }
+    function closeModal(){
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden","true");
+    }
+
+    document.querySelectorAll(".student-mini").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const amka = btn.dataset.amka;
+        const name = btn.dataset.name;
+        title.textContent = name;
+
+        mCenter.textContent = btn.dataset.center || "-";
+        mAmka.textContent = amka || "-";
+        mParent.textContent = btn.dataset.parent || "-";
+        mPhone.textContent = btn.dataset.phone || "-";
+        mExp.textContent = btn.dataset.exp || "-";
+
+        openBtn.href = `/students/${amka}`;
+        deleteForm.action = `/students/${amka}/delete`;
+
+        openModal();
+      });
+    });
+
+    modal.addEventListener("click", (e) => {
+      const close = e.target.closest("[data-close='1']");
+      if (close) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeModal();
+    });
+  })();
+</script>
+{% endblock %}

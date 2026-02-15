@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Student | KidsLogix{% endblock %}
+{% block page_title %}Student Card{% endblock %}
+
+{% block content %}
+  <div class="header">
+    <h2>{{ student.full_name }}</h2>
+    <p style="color: var(--secondary-text-clr);">Dataset: <b>{{ dataset }}</b></p>
+  </div>
+
+  <div style="margin-top:18px; display:grid; gap:16px; max-width: 980px;">
+
+    <div style="background: var(--card-bg); box-shadow: var(--card-shadow); border-radius:14px; padding:18px;">
+      <h3 style="margin:0 0 10px 0;">Student info</h3>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        <div>
+          <b>Date of birth:</b>
+          {{ student.date_of_birth.strftime('%d/%m/%Y') if student.date_of_birth else '-' }}
+        </div>
+
+        <div>
+          <b>Payment date:</b>
+          {{ student.payment_date.strftime('%d/%m/%Y') if student.payment_date else '-' }}
+        </div>
+
+        <div><b>Parent name:</b> {{ student.parent_name or "-" }}</div>
+        <div><b>Parent phone:</b> {{ student.parent_phone or "-" }}</div>
+
+        <div>
+          <b>Assessment expiry:</b>
+          {{ student.assessment_expiry_date.strftime('%d/%m/%Y') if student.assessment_expiry_date else '-' }}
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <b>Admin comment:</b>
+        <div style="margin-top:6px; white-space:pre-wrap;">{{ student.admin_comment or "-" }}</div>
+      </div>
+    </div>
+
+    <div style="background: var(--card-bg); box-shadow: var(--card-shadow); border-radius:14px; padding:18px;">
+      <h3 style="margin:0 0 10px 0;">Sessions per service</h3>
+
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left;">
+            <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Service</th>
+            <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Total</th>
+            <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Used (not cancelled)</th>
+            <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in session_summary %}
+            <tr>
+              <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.service_title }}</td>
+              <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.total }}</td>
+              <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">{{ row.used }}</td>
+              <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);"><b>{{ row.remaining }}</b></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background: var(--card-bg); box-shadow: var(--card-shadow); border-radius:14px; padding:18px;">
+      <h3 style="margin:0 0 10px 0;">Appointments (includes cancelled)</h3>
+
+      {% if appointments|length == 0 %}
+        <p>No appointments yet.</p>
+      {% else %}
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="text-align:left;">
+              <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">When</th>
+              <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Service</th>
+              <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Duration</th>
+              <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Status</th>
+              <th style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.08);">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in appointments %}
+              <tr>
+                <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                  {{ a.starts_at.strftime('%d/%m/%Y %H:%M') if a.starts_at else '-' }}
+                </td>
+
+                <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                  {{ a.service.title }}
+                </td>
+
+                <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                  {{ a.duration_minutes }}'
+                </td>
+
+                <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                  <b>{{ a.status }}</b>
+                </td>
+
+                <td style="padding:10px; border-bottom:1px solid rgba(0,0,0,0.05);">
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    {% if a.status == "scheduled" %}
+                      <form method="post" action="/appointments/{{ a.id }}/status">
+                        <input type="hidden" name="status" value="completed">
+                        <button class="primary-btn" type="submit" style="padding:6px 10px;">Completed</button>
+                      </form>
+
+                      <form method="post" action="/appointments/{{ a.id }}/status">
+                        <input type="hidden" name="status" value="cancelled">
+                        <button class="primary-btn" type="submit" style="padding:6px 10px;">Cancel</button>
+                      </form>
+                    {% else %}
+                      <span style="color: var(--secondary-text-clr);">No actions</span>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+
+  </div>
+{% endblock %}
