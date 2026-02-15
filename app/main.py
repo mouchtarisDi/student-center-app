@@ -27,3 +27,7 @@ init_db()
 
 app.include_router(auth.router)
 app.include_router(web.router)
+
+@app.on_event("startup")
+def on_startup():
+    Base.metadata.create_all(bind=engine)
