@@ -127,11 +127,24 @@ a{ color: inherit; }
   gap:10px;
 }
 
-.topbar-btn{
+/* .topbar-btn{
   background: rgba(255,255,255,.12);
   border: 1px solid rgba(255,255,255,.15);
   color: var(--topbar-text);
+} */
+
+html[data-theme="light"] .topbar-btn{
+  background: rgba(255,255,255,0.08);   /* πιο διακριτικό */
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.92);
+  transition: background .15s ease, transform .1s ease;
 }
+
+html[data-theme="light"] .topbar-btn:hover{
+  background: rgba(255,255,255,0.16);   /* ελαφριά ενίσχυση στο hover */
+  transform: translateY(-1px);
+}
+
 html[data-theme="dark"] .topbar-btn{
   background: rgba(255,255,255,.08);
   border: 1px solid rgba(255,255,255,.10);

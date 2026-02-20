@@ -16,8 +16,9 @@ def _normalize_database_url(url: str) -> str:
 
 
 # Αν δεν έχεις DATABASE_URL, δουλεύει τοπικά με SQLite
-DATABASE_URL = _normalize_database_url(
-    os.getenv("DATABASE_URL", "postgresql://student_center_db_user:ERwftoONNFlf6UU9zeb63M4QoaD9mP6x@dpg-d68th6bh46gs73fkhp8g-a/student_center_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///./local.db"
 )
 
 # SQLite χρειάζεται special connect_args
@@ -27,8 +28,8 @@ if DATABASE_URL.startswith("sqlite"):
 
 engine = create_engine(
     DATABASE_URL,
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
     pool_pre_ping=True,
-    connect_args=connect_args,
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
