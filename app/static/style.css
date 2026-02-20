@@ -523,10 +523,15 @@ input:focus, select:focus, textarea:focus{
 }
 
 .dash-stats{
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  display:grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+@media (max-width: 1024px){
+  .dash-stats{ grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 640px){
+  .dash-stats{ grid-template-columns: 1fr !important; }
 }
 
 .stat-card{
@@ -534,7 +539,8 @@ input:focus, select:focus, textarea:focus{
   align-items:center;
   gap: 12px;
   padding: 14px 14px;
-  border-radius: 16px;
+  border-radius: 12px;          /* πιο “τετράγωνα” */
+  min-height: 110px;            /* βοηθά να μη γίνονται μακρόστενα */
   text-decoration:none;
   color: inherit;
   background: var(--card-bg);
@@ -557,21 +563,40 @@ input:focus, select:focus, textarea:focus{
 }
 .stat-icon span{ font-size: 22px; }
 
-.stat-icon-blue{ background: rgba(80,140,255,.20); }
-.stat-icon-orange{ background: rgba(255,160,60,.20); }
-.stat-icon-green{ background: rgba(60,180,120,.20); }
+.stat-icon-blue{
+  background: rgba(80,140,255,.20);
+  color: rgba(35, 85, 190, .95);
+}
+.stat-icon-orange{
+  background: rgba(255,160,60,.20);
+  color: rgba(185, 95, 10, .95);
+}
+.stat-icon-green{
+  background: rgba(60,180,120,.20);
+  color: rgba(20, 120, 75, .95);
+}
 
-.stat-body{ flex: 1; }
-.stat-label{ font-weight: 700; opacity: .9; }
-.stat-value{ font-size: 26px; font-weight: 900; margin-top: 2px; }
+.stat-body{ flex: 1; min-width: 0; }
+.stat-label{ font-weight: 700; opacity: .95; }
+.stat-sub{
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0,0,0,.55);
+}
+.stat-value{ font-size: 26px; font-weight: 900; margin-top: 6px; line-height: 1; }
 
 .stat-arrow{ opacity: .7; }
 
 .dash-grid{
   display:grid;
-  grid-template-columns: 1.25fr .9fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   align-items:start;
+  margin-top: 14px;
+}
+@media (max-width: 640px){
+  .dash-grid{ grid-template-columns: 1fr; }
 }
 
 .panel{
@@ -604,6 +629,10 @@ input:focus, select:focus, textarea:focus{
   font-size: 20px;
   opacity:.9;
 }
+.panel-title-text h2{
+  margin:0;
+  font-size: 16px;
+}
 
 .panel-link{
   display:inline-flex;
@@ -616,6 +645,12 @@ input:focus, select:focus, textarea:focus{
 
 .panel-body{
   padding: 12px 14px 14px;
+}
+.panel-sub{
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0,0,0,.55);
 }
 
 .list{ display:grid; gap: 10px; }
@@ -1272,4 +1307,605 @@ html[data-theme="dark"] .ap-chip{
 }
 .hint-row .material-icons-outlined{
   font-size:20px;
+}
+
+.view-toggle{
+  display:flex;
+  gap: 10px;
+  margin: 10px 0 14px;
+}
+.toggle-btn{
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor:pointer;
+  font-weight: 700;
+}
+.toggle-btn.active{
+  box-shadow: var(--shadow-sm);
+}
+
+.hidden{ display:none !important; }
+
+.month-controls{
+  display:flex;
+  gap: 12px;
+  align-items:end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.month-grid{
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.cal-head{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--border);
+}
+.cal-dow{
+  padding: 10px;
+  font-weight: 800;
+  opacity: .7;
+}
+
+.cal-body{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.cal-cell{
+  min-height: 120px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px;
+}
+.cal-cell:nth-child(7n){
+  border-right: none;
+}
+.cal-empty{
+  background: rgba(0,0,0,.03);
+}
+.cal-day{
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+.cal-items{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cal-item{
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(0,0,0,.04);
+}
+.cal-item .t{
+  font-weight: 900;
+  margin-right: 6px;
+}
+.cal-item.completed{ opacity: .75; }
+.cal-no{ opacity: .35; font-weight: 700; }
+
+@media (max-width: 640px){
+  .cal-cell{ min-height: 95px; }
+}
+
+.weekly-list{
+  display:grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 14px;
+}
+
+.day-column{
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display:flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.day-header{
+  padding: 12px;
+  font-weight: 900;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-date{
+  font-size: 12px;
+  opacity:.6;
+  font-weight:600;
+}
+
+.day-body{
+  padding: 10px;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ap-card{
+  display:flex;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.08);
+  background:rgba(0,0,0,.04);
+  font-size:13px;
+}
+
+.ap-card.completed{
+  opacity:.65;
+}
+
+.ap-time{
+  font-weight:900;
+  min-width:48px;
+}
+
+.ap-student{
+  font-weight:800;
+}
+
+.ap-service{
+  font-size:12px;
+  opacity:.6;
+}
+
+.empty-day{
+  opacity:.3;
+  font-weight:700;
+}
+@media (max-width: 1100px){
+  .weekly-list{
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px){
+  .weekly-list{
+    grid-template-columns: repeat(1, 1fr);
+  }
+}
+/* =========================
+   WEEKLY LIST (Mon-Sat)
+   ========================= */
+.weekly-list{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.day-column{
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+  min-height: 260px;
+}
+
+.day-header{
+  padding: 12px 12px;
+  font-weight: 900;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-head-bg);
+}
+
+.day-header .day-date{
+  font-size: 12px;
+  opacity: .7;
+  font-weight: 700;
+}
+
+.day-body{
+  padding: 10px;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ap-card{
+  display:flex;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+}
+
+.ap-card.completed{ opacity: .7; }
+
+.ap-time{
+  min-width: 54px;
+  text-align:center;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-weight: 900;
+  background: var(--pill-bg);
+  border: 1px solid var(--border);
+}
+
+.ap-student{
+  font-weight: 900;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ap-service{
+  font-size: 12px;
+  opacity: .75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-day{
+  opacity: .35;
+  font-weight: 800;
+  padding: 10px 6px;
+}
+
+/* Responsive: 6 -> 3 -> 2 -> 1 */
+@media (max-width: 1100px){
+  .weekly-list{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px){
+  .weekly-list{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px){
+  .weekly-list{ grid-template-columns: 1fr; }
+}
+.day-column{ max-height: 520px; }         /* ρυθμίζεις ύψος */
+.day-header{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.day-body{
+  overflow-y: auto;
+}
+.day-column.is-today{
+  border: 2px solid rgba(0,0,0,.18);
+  box-shadow: var(--shadow-md);
+}
+/* =========================
+   WEEK BAR (week picker)
+   ========================= */
+.weekbar{
+  display:flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 14px;
+}
+
+.weekbar-left{
+  display:flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.weeknav{
+  display:inline-flex;
+  align-items:center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+  font-weight: 800;
+}
+
+.weekpick{
+  display:flex;
+  align-items:end;
+  gap: 8px;
+}
+
+.weekpick-label span{
+  display:block;
+  font-size: 12px;
+  opacity: .7;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.btn.btn-sm{
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-weight: 900;
+}
+
+.muted{ opacity: .7; }
+
+/* =========================
+   WEEKLY LIST (Mon-Sat)
+   ========================= */
+.weekly-list{
+  display:grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.day-column{
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  display:flex;
+  flex-direction: column;
+
+  /* ✅ κρατάει ίδιο ύψος, χωρίς “φούσκωμα” */
+  max-height: 520px;
+}
+
+.day-header{
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-head-bg);
+
+  /* ✅ sticky header */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.day-title{
+  font-weight: 900;
+}
+
+.day-date{
+  font-size: 12px;
+  opacity: .7;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.today-pill{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+}
+
+.day-column.is-today{
+  border: 2px solid rgba(0,0,0,.18);
+  box-shadow: var(--shadow-md);
+}
+
+.day-body{
+  padding: 10px;
+  display:flex;
+  flex-direction: column;
+  gap: 8px;
+
+  /* ✅ scroll στο περιεχόμενο */
+  overflow-y: auto;
+}
+
+.ap-card{
+  display:flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+}
+
+.ap-card.completed{ opacity: .75; }
+
+.ap-time{
+  min-width: 56px;
+  text-align:center;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-weight: 900;
+  background: var(--pill-bg);
+  border: 1px solid var(--border);
+}
+
+.ap-info{
+  min-width: 0;
+}
+
+.ap-student{
+  font-weight: 900;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ap-service{
+  font-size: 12px;
+  opacity: .75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ✅ Quick actions (εμφανίζονται σε hover) */
+.ap-actions{
+  margin-left: auto;
+  display:flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+.ap-card:hover .ap-actions{ opacity: 1; }
+
+.icon-mini{
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 10px;
+  padding: 6px;
+  display:grid;
+  place-items:center;
+  cursor: pointer;
+}
+
+.icon-mini span{ font-size: 18px; }
+
+.empty-day{
+  opacity: .35;
+  font-weight: 800;
+  padding: 10px 6px;
+}
+
+/* Responsive: 6 -> 3 -> 2 -> 1 */
+@media (max-width: 1100px){
+  .weekly-list{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px){
+  .weekly-list{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px){
+  .weekly-list{ grid-template-columns: 1fr; }
+}
+/* ===== Week Toolbar ===== */
+.weekbar{
+  display:flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px;
+  margin: 12px 0 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  border-radius: 16px;
+}
+
+.weekbar-left{
+  display:flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.weekbar-right{
+  display:flex;
+  align-items:end;
+  gap: 10px;
+}
+
+/* Buttons */
+.navbtn{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+  font-weight: 900;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.navbtn span.material-icons-outlined{
+  font-size: 18px;
+}
+
+.navbtn:hover{
+  filter: brightness(0.98);
+}
+
+.navbtn-primary{
+  background: rgba(0,0,0,.06);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Week picker block */
+.weekpick{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weekpick-label{
+  font-size: 12px;
+  opacity: .7;
+  font-weight: 800;
+  padding-left: 2px;
+}
+
+.weekpick-row{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+}
+
+.weekpick-row input[type="date"]{
+  border: none;
+  background: transparent;
+  outline: none;
+  font-weight: 900;
+}
+
+/* Center dropdown */
+.centerpick{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.centerpick-label{
+  font-size: 12px;
+  opacity: .7;
+  font-weight: 800;
+  padding-left: 2px;
+}
+
+.center-select{
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--row-bg);
+  font-weight: 900;
+  outline: none;
+}
+
+/* Responsive: να μη “σπάει” άσχημα */
+@media (max-width: 640px){
+  .weekbar{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .weekbar-right{
+    justify-content: flex-start;
+  }
+  .center-select{
+    width: 100%;
+  }
 }

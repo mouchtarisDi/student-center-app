@@ -40,9 +40,7 @@
             {% endfor %}
           </select>
         </label>
-      </div>
 
-      <div class="grid-3">
         <label class="field">
           <span>Υπηρεσία</span>
           <select id="serviceSelect" name="service_id" required>
@@ -60,32 +58,30 @@
 
         <label class="field">
           <span>Ώρα</span>
-          <input type="time" name="start_time" required>
+          <input type="time" name="start_time" placeholder="--:--">
         </label>
-      </div>
 
-      <div class="grid-3">
         <label class="field">
           <span>Πλήθος συνεδριών</span>
-          <input id="countInput" type="number" name="count" min="1" max="200" value="1" required>
+          <input id="countInput" type="number" name="count" min="1" value="1" required>
         </label>
 
         <label class="field">
           <span>Διάρκεια (λεπτά)</span>
-          <input type="number" name="duration_min" min="10" max="180" value="45">
+          <input type="number" name="duration_min" min="15" step="5" value="45">
         </label>
 
-        <label class="field checkbox">
+        <label class="field inline">
           <span>Skip Holidays</span>
           <input type="checkbox" name="skip_holidays" checked>
         </label>
       </div>
 
-      <div class="muted" id="remainingLabel" style="margin-top:6px;">
-        Διαθέσιμες συνεδρίες: —
-      </div>
-
       <div class="form-actions">
+        <div class="muted">
+          Διαθέσιμες συνεδρίες: <b id="remainingLabel">—</b>
+        </div>
+
         <button class="btn btn-primary" type="submit">
           <span class="material-icons-outlined">save</span>
           Δημιουργία
@@ -95,172 +91,171 @@
   </div>
 </div>
 
-<!-- ============ WEEK VIEW CARD ============ -->
-<div class="card">
-  <div class="card-head">
-    <div class="card-title">
-      <span class="material-icons-outlined">calendar_month</span>
-      <h2>Προβολή Εβδομάδας</h2>
+<!-- Toggle buttons (MUST be type="button") -->
+<div class="view-toggle">
+  <button type="button" class="toggle-btn active" id="btnWeekly">Weekly schedule</button>
+  <button type="button" class="toggle-btn" id="btnMonthly">Student monthly schedule</button>
+</div>
+
+<!-- ================= WEEKLY VIEW ================= -->
+<div id="weeklyView">
+
+  <!-- Week selector / navigation + center selection -->
+  <form method="get" action="/schedule" class="weekbar">
+    <div class="weekbar-left">
+
+      <!-- Prev week -->
+      <button class="navbtn" type="submit" name="week" value="{{ prev_week }}" title="Previous week">
+        <span class="material-icons-outlined">chevron_left</span>
+        <span>Prev</span>
+      </button>
+
+      <!-- Week picker -->
+      <div class="weekpick">
+        <div class="weekpick-label">Week</div>
+        <div class="weekpick-row">
+          <span class="material-icons-outlined">calendar_month</span>
+          <input type="date" name="week" value="{{ week_start_str }}">
+        </div>
+      </div>
+
+      <!-- Go -->
+      <button class="navbtn navbtn-primary" type="submit" title="Go to week">
+        <span class="material-icons-outlined">arrow_forward</span>
+        <span>Go</span>
+      </button>
+
+      <!-- Next week -->
+      <button class="navbtn" type="submit" name="week" value="{{ next_week }}" title="Next week">
+        <span>Next</span>
+        <span class="material-icons-outlined">chevron_right</span>
+      </button>
+
     </div>
 
-    <form class="filters" method="get" action="/schedule">
-      <label class="field-inline">
-        <span>Κέντρο</span>
-        <select name="center">
-          {% for key, label in centers.items() %}
-            <option value="{{ key }}" {% if center == key %}selected{% endif %}>{{ label }}</option>
+    <div class="weekbar-right">
+      <div class="centerpick">
+        <div class="centerpick-label">Center</div>
+        <select name="center" class="center-select">
+          {% for c in centers %}
+            <option value="{{ c }}" {% if c == center %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
         </select>
-      </label>
+      </div>
+    </div>
+  </form>
 
-      <label class="field-inline">
-        <span>Εβδομάδα (Δευτέρα)</span>
-        <input type="date" name="week" value="{{ week_start_str }}">
-      </label>
+  <!-- Weekly list (Mon..Sat) -->
+  <div class="weekly-list">
+    {% for d in week_days %}
+      {% set key = d.isoformat() %}
+      <div class="day-column {% if today and key == today.isoformat() %}is-today{% endif %}">
 
-      <button class="btn" type="submit" title="Προβολή">
-        <span class="material-icons-outlined">search</span>
-        Προβολή
-      </button>
-    </form>
+        <div class="day-header">
+          <div class="day-title">
+            {{ d.strftime("%A") }}
+            <span class="day-date">{{ d.strftime("%d/%m") }}</span>
+          </div>
+          {% if today and key == today.isoformat() %}
+            <span class="today-pill">Today</span>
+          {% endif %}
+        </div>
+
+        <div class="day-body">
+          {% set day_aps = appointments_by_day.get(key, []) %}
+
+          {% if day_aps %}
+            {% for ap in day_aps %}
+              <div class="ap-card {{ ap.status }}">
+                <div class="ap-time">{{ ap.start_time.strftime("%H:%M") }}</div>
+
+                <div class="ap-info">
+                  <div class="ap-student">
+                    {{ ap.student.full_name if ap.student else ap.student_amka }}
+                  </div>
+                  <div class="ap-service">
+                    {{ ap.service.name if ap.service else ("Service #" ~ ap.service_id) }}
+                  </div>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="ap-actions">
+                  <a class="icon-mini" href="/students/{{ ap.student_amka }}" title="Open student">
+                    <span class="material-icons-outlined">person</span>
+                  </a>
+
+                  <form method="post" action="/schedule/{{ ap.id }}/status">
+                    <input type="hidden" name="status" value="completed">
+                    <input type="hidden" name="next" value="/schedule?center={{ center }}&week={{ week_start_str }}">
+                    <button class="icon-mini" type="submit" title="Mark completed">
+                      <span class="material-icons-outlined">check_circle</span>
+                    </button>
+                  </form>
+
+                  <form method="post" action="/schedule/{{ ap.id }}/status">
+                    <input type="hidden" name="status" value="canceled">
+                    <input type="hidden" name="next" value="/schedule?center={{ center }}&week={{ week_start_str }}">
+                    <button class="icon-mini" type="submit" title="Cancel">
+                      <span class="material-icons-outlined">cancel</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-day">—</div>
+          {% endif %}
+        </div>
+
+      </div>
+    {% endfor %}
   </div>
 
-  <div class="card-body">
-    <div class="week-grid">
-      <div class="week-grid-head">
-        <div class="col-time"></div>
-        {% for d in days %}
-          <div class="col-day">
-            <div class="day-name">{{ d.label }}</div>
-            <div class="day-date">{{ d.date_str }}</div>
-          </div>
-        {% endfor %}
+</div>
+
+<!-- ================= MONTHLY VIEW ================= -->
+<div id="monthlyView" class="hidden">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">
+        <span class="material-icons-outlined">calendar_month</span>
+        <h2>Student Monthly Schedule</h2>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="grid-3">
+        <label class="field">
+          <span>Μαθητής</span>
+          <select id="monthStudent">
+            <option value="" disabled selected>Επιλογή μαθητή</option>
+            {% for st in students %}
+              <option value="{{ st.amka }}">{{ st.full_name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Μήνας</span>
+          <input type="month" id="monthPick">
+        </label>
+
+        <div class="form-actions" style="align-items:flex-end;">
+          <button type="button" id="loadMonthBtn" class="btn btn-primary">
+            <span class="material-icons-outlined">search</span>
+            Load
+          </button>
+        </div>
       </div>
 
-      <div class="week-grid-body">
-        {% for slot in time_slots %}
-          <div class="row-time">{{ slot }}</div>
-
-          {% for d in days %}
-            {% set key = d.date_iso ~ "|" ~ slot %}
-            <div class="cell">
-              {% if grid.get(key) %}
-                <div class="ap-stack">
-                  {% for ap in grid.get(key) %}
-                    <div class="ap-chip ap-{{ ap.status }}">
-                      <div class="ap-top">
-                        <div class="ap-name" title="{{ ap.student_name }}">{{ ap.student_name }}</div>
-                        <div class="ap-sub" title="{{ ap.service_name }}">{{ ap.service_name }}</div>
-                      </div>
-
-                      <div class="ap-actions">
-                        <!-- Complete -->
-                        <form method="post" action="/schedule/{{ ap.id }}/status" class="mini-form" title="Ολοκληρώθηκε">
-                          <input type="hidden" name="status" value="completed">
-                          <button class="icon-round ok" type="submit">
-                            <span class="material-icons-outlined">check</span>
-                          </button>
-                        </form>
-
-                        <!-- Cancel -->
-                        <form method="post" action="/schedule/{{ ap.id }}/status" class="mini-form" title="Ακύρωση"
-                              onsubmit="return confirm('Σίγουρα ακύρωση;');">
-                          <input type="hidden" name="status" value="canceled">
-                          <button class="icon-round danger" type="submit">
-                            <span class="material-icons-outlined">close</span>
-                          </button>
-                        </form>
-
-                        <!-- Back to scheduled -->
-                        {% if ap.status != "scheduled" %}
-                        <form method="post" action="/schedule/{{ ap.id }}/status" class="mini-form" title="Επαναφορά">
-                          <input type="hidden" name="status" value="scheduled">
-                          <button class="icon-round neutral" type="submit">
-                            <span class="material-icons-outlined">undo</span>
-                          </button>
-                        </form>
-                        {% endif %}
-                      </div>
-                    </div>
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </div>
-          {% endfor %}
-        {% endfor %}
+      <div id="monthEmpty" class="muted" style="margin-top:12px;">
+        Δεν υπάρχουν συνεδρίες για τον επιλεγμένο μήνα.
       </div>
+
+      <div id="monthGrid" style="margin-top:12px;"></div>
     </div>
   </div>
 </div>
-
-<!-- ======= CSS (μικρό “patch” για να χωράνε όλα) ======= -->
-<style>
-  .ap-stack{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-  }
-  .ap-chip{
-    border:1px solid #cfd8dc;
-    border-radius:14px;
-    padding:8px 10px;
-    background:#f7fbff;
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    overflow:hidden;
-  }
-  .ap-chip.ap-completed{ background:#f2fff5; border-color:#b7e3c2; }
-  .ap-chip.ap-canceled{ background:#fff5f5; border-color:#f0b9b9; opacity:0.9; }
-
-  .ap-top{ display:flex; flex-direction:column; gap:2px; }
-  .ap-name{
-    font-weight:700;
-    font-size:13px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .ap-sub{
-    font-size:12px;
-    opacity:0.85;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-
-  .ap-actions{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    justify-content:flex-end;
-    flex-wrap:wrap;
-  }
-  .mini-form{ margin:0; }
-  .icon-round{
-    width:34px;
-    height:34px;
-    border-radius:999px;
-    border:none;
-    cursor:pointer;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-  }
-  .icon-round span{ font-size:18px; }
-  .icon-round.ok{ background:#1b5e20; color:#fff; }
-  .icon-round.danger{ background:#b71c1c; color:#fff; }
-  .icon-round.neutral{ background:#455a64; color:#fff; }
-
-  /* Search input look */
-  #studentSearch{
-    width:100%;
-    padding:10px 12px;
-    border:1px solid #cfd8dc;
-    border-radius:12px;
-    outline:none;
-  }
-</style>
 
 <!-- ======= DATA + JS ======= -->
 <script type="application/json" id="remainingData">
@@ -284,55 +279,63 @@
     const options = Array.from(stSel?.options || []);
     const defaultOpt = options[0];
 
-    function filterStudents() {
-      if (!stSel || !searchInput) return;
-      const q = (searchInput.value || "").trim().toLowerCase();
+    function filterStudents(q) {
+      q = (q || "").trim().toLowerCase();
+      if (!stSel) return;
 
-      // reset
+      // keep current selection
+      const cur = stSel.value;
+
+      // rebuild options
       stSel.innerHTML = "";
       stSel.appendChild(defaultOpt);
 
-      if (!q) {
-        for (let i = 1; i < options.length; i++) stSel.appendChild(options[i]);
-        return;
+      for (const opt of options.slice(1)) {
+        const hay = opt.getAttribute("data-search") || "";
+        if (!q || hay.includes(q)) stSel.appendChild(opt);
       }
 
-      for (let i = 1; i < options.length; i++) {
-        const opt = options[i];
-        const hay = (opt.getAttribute("data-search") || opt.textContent || "").toLowerCase();
-        if (hay.includes(q)) stSel.appendChild(opt);
-      }
+      // restore selection if still present
+      if (cur) stSel.value = cur;
     }
 
     if (searchInput) {
-      searchInput.addEventListener("input", filterStudents);
+      searchInput.addEventListener("input", (e) => filterStudents(e.target.value));
+    }
+
+    // --- Persist selected student (localStorage) ---
+    const LS_STUDENT = "schedule.selectedStudent";
+    if (stSel) {
+      const saved = localStorage.getItem(LS_STUDENT);
+      if (saved) stSel.value = saved;
+      stSel.addEventListener("change", () => {
+        localStorage.setItem(LS_STUDENT, stSel.value || "");
+      });
     }
 
     function updateRemaining() {
-      const amka = (stSel?.value || "").trim();
-      const sid = (svcSel?.value || "").trim();
+      if (!stSel || !svcSel || !lbl) return;
+      const st = stSel.value || "";
+      const svc = svcSel.value || "";
 
-      if (!amka || !sid) {
-        if (lbl) lbl.textContent = "Διαθέσιμες συνεδρίες: —";
+      if (!st || !svc) {
+        lbl.textContent = "—";
         if (countInput) countInput.removeAttribute("max");
         return;
       }
 
-      const key = `${amka}|${sid}`;
-      const remaining = remainingMap[key];
+      const key = `${st}|${svc}`;
+      const rem = remainingMap[key];
 
-      if (lbl) {
-        lbl.textContent = "Διαθέσιμες συνεδρίες: " + (remaining === undefined ? "—" : remaining);
-      }
-
-      // constrain count max if we know remaining
-      if (countInput && remaining !== undefined) {
-        countInput.max = String(Math.max(Number(remaining), 1));
-        if (Number(countInput.value) > Number(countInput.max)) {
-          countInput.value = countInput.max;
+      if (typeof rem === "number") {
+        lbl.textContent = String(rem);
+        if (countInput) {
+          countInput.max = String(rem);
+          if (Number(countInput.value || 0) > rem) countInput.value = rem;
         }
-      } else if (countInput) {
-        countInput.removeAttribute("max");
+      } else {
+        lbl.textContent = "—";
+        if (countInput) countInput.removeAttribute("max");
       }
     }
 
@@ -341,6 +344,145 @@
 
     updateRemaining();
   });
+</script>
+
+<script>
+  // auto-submit when center changes
+  const centerSel = document.querySelector('.center-select');
+  if (centerSel) {
+    centerSel.addEventListener('change', () => {
+      centerSel.form.submit();
+    });
+  }
+</script>
+
+<script>
+  const weeklyView = document.getElementById("weeklyView");
+  const monthlyView = document.getElementById("monthlyView");
+  const btnWeekly = document.getElementById("btnWeekly");
+  const btnMonthly = document.getElementById("btnMonthly");
+
+  const monthStudent = document.getElementById("monthStudent");
+  const monthPick = document.getElementById("monthPick");
+  const loadMonthBtn = document.getElementById("loadMonthBtn");
+  const monthGrid = document.getElementById("monthGrid");
+  const monthEmpty = document.getElementById("monthEmpty");
+
+  // default month = current month
+  const now = new Date();
+  monthPick.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+
+  // persist view & student
+  const LS_VIEW = "schedule.viewMode"; // weekly|monthly
+  const LS_MONTH_ST = "schedule.monthStudent";
+  const LS_MONTH_PICK = "schedule.monthPick";
+
+  function setActive(btnOn, btnOff) {
+    btnOn.classList.add("active");
+    btnOff.classList.remove("active");
+  }
+
+  function showWeekly() {
+    weeklyView.classList.remove("hidden");
+    monthlyView.classList.add("hidden");
+    setActive(btnWeekly, btnMonthly);
+    localStorage.setItem(LS_VIEW, "weekly");
+  }
+
+  function showMonthly() {
+    weeklyView.classList.add("hidden");
+    monthlyView.classList.remove("hidden");
+    setActive(btnMonthly, btnWeekly);
+    localStorage.setItem(LS_VIEW, "monthly");
+  }
+
+  btnWeekly.addEventListener("click", showWeekly);
+  btnMonthly.addEventListener("click", showMonthly);
+
+  // restore last mode
+  const savedMode = localStorage.getItem(LS_VIEW);
+  if (savedMode === "monthly") showMonthly();
+
+  // restore student/month
+  const savedSt = localStorage.getItem(LS_MONTH_ST);
+  if (savedSt) monthStudent.value = savedSt;
+
+  const savedMonth = localStorage.getItem(LS_MONTH_PICK);
+  if (savedMonth) monthPick.value = savedMonth;
+
+  monthStudent.addEventListener("change", () => localStorage.setItem(LS_MONTH_ST, monthStudent.value || ""));
+  monthPick.addEventListener("change", () => localStorage.setItem(LS_MONTH_PICK, monthPick.value || ""));
+
+  function buildCalendar(year, month1to12, items) {
+    // items grouped by day
+    const byDay = {};
+    for (const it of items) {
+      const day = it.day; // YYYY-MM-DD
+      (byDay[day] = byDay[day] || []).push(it);
+    }
+
+    // first day of month
+    const first = new Date(year, month1to12-1, 1);
+    const last = new Date(year, month1to12, 0);
+    const startDow = (first.getDay() + 6) % 7; // Mon=0
+    const daysInMonth = last.getDate();
+
+    let html = `<div class="month-cal">`;
+    const weekDays = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    html += `<div class="month-cal-head">` + weekDays.map(d=>`<div class="mch">${d}</div>`).join("") + `</div>`;
+    html += `<div class="month-cal-grid">`;
+
+    // blanks
+    for (let i=0;i<startDow;i++) html += `<div class="mcell empty"></div>`;
+
+    for (let day=1; day<=daysInMonth; day++){
+      const dt = new Date(year, month1to12-1, day);
+      const iso = dt.toISOString().slice(0,10);
+      const list = (byDay[iso] || []).sort((a,b)=> (a.start_time||"").localeCompare(b.start_time||""));
+
+      html += `<div class="mcell">`;
+      html += `<div class="mday">${day}</div>`;
+      if (list.length){
+        html += `<div class="mlist">`;
+        for (const ap of list){
+          const t = ap.start_time ? ap.start_time.slice(0,5) : "--:--";
+          html += `<div class="mitem">`;
+          html += `<div class="mt">${t}</div>`;
+          html += `<div class="mn">${ap.student_name || ap.student_amka}</div>`;
+          html += `</div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+    html += `</div>`;
+    monthGrid.innerHTML = html;
+  }
+
+  async function loadMonth() {
+    const st = monthStudent.value;
+    const ym = monthPick.value; // YYYY-MM
+    if (!st || !ym) return;
+
+    const [y, m] = ym.split("-").map(Number);
+
+    const res = await fetch(`/schedule/student-month?student_amka=${encodeURIComponent(st)}&year=${y}&month=${m}`);
+    const data = await res.json();
+
+    const items = data.items || [];
+    monthEmpty.classList.toggle("hidden", items.length > 0);
+
+    buildCalendar(y, m, items);
+  }
+
+  loadMonthBtn.addEventListener("click", loadMonth);
+
+  // auto-load when mode is monthly and fields exist
+  if (savedMode === "monthly" && monthStudent.value) {
+    loadMonth();
+  }
 </script>
 
 {% endblock %}

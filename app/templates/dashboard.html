@@ -7,66 +7,85 @@
   <p class="dash-subtitle">Here you can manage all your student information and sessions.</p>
 </div>
 
+<!-- =========================
+     STATISTICS (4 cards)
+     2x Students per center + 2x Reports expiring per center
+========================= -->
 <div class="dash-stats">
-  <a class="stat-card" href="/students" aria-label="Students list">
+  {# Students per center #}
+  {% for center in centers_order %}
+  <a class="stat-card" href="/students?center={{ center }}" aria-label="Students in {{ centers_labels[center] }}">
     <div class="stat-icon stat-icon-blue">
       <span class="material-icons-outlined">group</span>
     </div>
     <div class="stat-body">
-      <div class="stat-label">Total Students</div>
-      <div class="stat-value">{{ total_students }}</div>
+      <div class="stat-label">Students</div>
+      <div class="stat-sub">{{ centers_labels[center] }}</div>
+      <div class="stat-value">{{ student_counts_by_center[center] }}</div>
     </div>
     <span class="material-icons-outlined stat-arrow">chevron_right</span>
   </a>
+  {% endfor %}
 
-  <a class="stat-card" href="/students" aria-label="Reports expiring">
+  {# Reports expiring per center #}
+  {% for center in centers_order %}
+  <a class="stat-card" href="/students?center={{ center }}" aria-label="Reports expiring in {{ centers_labels[center] }}">
     <div class="stat-icon stat-icon-orange">
       <span class="material-icons-outlined">pending_actions</span>
     </div>
     <div class="stat-body">
-      <div class="stat-label">Reports Expiring</div>
-      <div class="stat-value">{{ reports_expiring }}</div>
+      <div class="stat-label">Reports Close to Expire</div>
+      <div class="stat-sub">{{ centers_labels[center] }}</div>
+      <div class="stat-value">{{ reports_expiring_by_center[center] }}</div>
     </div>
     <span class="material-icons-outlined stat-arrow">chevron_right</span>
   </a>
-
-  <a class="stat-card" href="/students" aria-label="Payments pending">
-    <div class="stat-icon stat-icon-green">
-      <span class="material-icons-outlined">payments</span>
-    </div>
-    <div class="stat-body">
-      <div class="stat-label">Payments Pending</div>
-      <div class="stat-value">{{ payments_pending }}</div>
-    </div>
-    <span class="material-icons-outlined stat-arrow">chevron_right</span>
-  </a>
+  {% endfor %}
 </div>
 
+<!-- =========================
+     PANELS per center (2x2)
+     Row1: Program Giannitsa | Reports Giannitsa
+     Row2: Program KryaVrisi | Reports KryaVrisi
+========================= -->
 <div class="dash-grid">
+
+  <!-- =========================
+       ROW 1: Programs (2 panels)
+  ========================= -->
+  {% for center in centers_order %}
   <section class="panel">
     <div class="panel-head">
       <div class="panel-title">
         <span class="material-icons-outlined">schedule</span>
-        <h2>Today's Program Overview</h2>
+        <div class="panel-title-text">
+          <h2>Today's Program</h2>
+          <div class="panel-sub">{{ centers_labels[center] }}</div>
+        </div>
       </div>
       <a class="panel-link" href="/schedule">
         Open schedule <span class="material-icons-outlined">chevron_right</span>
       </a>
     </div>
 
-    <div class="panel-body">
-      {% if todays_appointments and todays_appointments|length > 0 %}
+    <div class="panel-body panel-body-scroll">
+      {% set aps = todays_by_center.get(center, []) %}
+      {% if aps and aps|length > 0 %}
         <div class="list">
-          {% for ap in todays_appointments %}
+          {% for ap in aps %}
             <div class="list-row">
               <div class="time-pill">{{ ap.start_time.strftime("%H:%M") }}</div>
 
               <div class="list-main">
-                <div class="list-title">{{ ap.student.full_name }}</div>
-                <div class="list-subtitle">{{ ap.service.name }}</div>
+                <div class="list-title">
+                  {% if ap.student %}{{ ap.student.full_name }}{% else %}{{ ap.student_amka }}{% endif %}
+                </div>
+                <div class="list-subtitle">
+                  {% if ap.service %}{{ ap.service.name }}{% else %}Service #{{ ap.service_id }}{% endif %}
+                </div>
               </div>
 
-              <a class="icon-btn" href="/schedule" title="Go to schedule">
+              <a class="icon-btn" href="/students/{{ ap.student_amka }}" title="Open student card">
                 <span class="material-icons-outlined">chevron_right</span>
               </a>
             </div>
@@ -77,19 +96,28 @@
       {% endif %}
     </div>
   </section>
+  {% endfor %}
 
+  <!-- =========================
+       ROW 2: Reports (2 panels)
+  ========================= -->
+  {% for center in centers_order %}
   <section class="panel">
     <div class="panel-head">
       <div class="panel-title">
         <span class="material-icons-outlined">pending_actions</span>
-        <h2>Reports Close to Expire</h2>
+        <div class="panel-title-text">
+          <h2>Reports Close to Expire</h2>
+          <div class="panel-sub">{{ centers_labels[center] }}</div>
+        </div>
       </div>
-      <a class="panel-link" href="/students">
+      <a class="panel-link" href="/students?center={{ center }}">
         Open students <span class="material-icons-outlined">chevron_right</span>
       </a>
     </div>
 
-    <div class="panel-body">
+    <div class="panel-body panel-body-scroll">
+      {% set reports_list = reports_list_by_center.get(center, []) %}
       {% if reports_list and reports_list|length > 0 %}
         <div class="list">
           {% for st in reports_list %}
@@ -106,7 +134,7 @@
                 </div>
               </div>
 
-              <a class="icon-btn" href="/students" title="Go to students">
+              <a class="icon-btn" href="/students/{{ st.amka }}" title="Open student card">
                 <span class="material-icons-outlined">chevron_right</span>
               </a>
             </div>
@@ -117,5 +145,7 @@
       {% endif %}
     </div>
   </section>
+  {% endfor %}
+
 </div>
 {% endblock %}

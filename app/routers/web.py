@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime, time, timedelta
+from calendar import monthrange
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Request, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.templating import Jinja2Templates
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 
@@ -94,6 +95,34 @@ def is_holiday(db: Session, center: str, d: date) -> bool:
         is not None
     )
 
+def _remaining_sessions(ss: StudentService) -> int:
+    """
+    Επιστρέφει πόσες συνεδρίες απομένουν για το συγκεκριμένο StudentService.
+    Προσαρμόζεται σε διαφορετικά πιθανά ονόματα πεδίων.
+    """
+    # Variant A: έχεις αποθηκευμένο "remaining_sessions"
+    if hasattr(ss, "remaining_sessions") and ss.remaining_sessions is not None:
+        return int(ss.remaining_sessions)
+
+    # Variant B: έχεις total/used
+    total = None
+    used = None
+
+    for name in ("total_sessions", "sessions_total", "allowed_sessions", "sessions_allowed"):
+        if hasattr(ss, name) and getattr(ss, name) is not None:
+            total = int(getattr(ss, name))
+            break
+
+    for name in ("used_sessions", "sessions_used", "completed_sessions", "consumed_sessions"):
+        if hasattr(ss, name) and getattr(ss, name) is not None:
+            used = int(getattr(ss, name))
+            break
+
+    if total is not None and used is not None:
+        return max(0, total - used)
+
+    # Αν δεν βρούμε τίποτα, καλύτερα να μπλοκάρουμε (fail-safe)
+    return -1
 
 @router.get("/login", response_class=HTMLResponse)
 def login_page(request: Request):
@@ -110,28 +139,55 @@ def dashboard(
     user: User = Depends(get_current_user),
 ):
     today = date.today()
-
-    total_students = db.query(Student).count()
-
     exp_limit = today + timedelta(days=30)
-    reports_list = (
-        db.query(Student)
-        .filter(Student.assessment_expiry_date.isnot(None))
-        .filter(Student.assessment_expiry_date <= exp_limit)
-        .order_by(Student.assessment_expiry_date.asc())
-        .all()
-    )
-    reports_expiring = len(reports_list)
 
-    todays_appointments = (
-        db.query(Appointment)
-        .filter(Appointment.day == today)
-        .filter(Appointment.status == "scheduled")
-        .order_by(Appointment.start_time.asc())
-        .all()
-    )
+    centers_order = ["Giannitsa", "KryaVrisi"]
+    centers_labels = {
+        "Giannitsa": CENTERS.get("Giannitsa", "Giannitsa"),
+        "KryaVrisi": CENTERS.get("KryaVrisi", "KryaVrisi"),
+    }
 
-    payments_pending = 0
+    # ---- Students per center ----
+    student_counts_by_center = {}
+    for c in centers_order:
+        student_counts_by_center[c] = (
+            db.query(Student)
+            .filter(Student.center == c)
+            .count()
+        )
+
+    # ---- Reports expiring per center (within 30 days) ----
+    reports_list_by_center = {}
+    reports_expiring_by_center = {}
+
+    for c in centers_order:
+        reports = (
+            db.query(Student)
+            .filter(Student.center == c)
+            .filter(Student.assessment_expiry_date.isnot(None))
+            .filter(Student.assessment_expiry_date >= today)
+            .filter(Student.assessment_expiry_date <= exp_limit)
+            .order_by(Student.assessment_expiry_date.asc())
+            .all()
+        )
+        reports_list_by_center[c] = reports
+        reports_expiring_by_center[c] = len(reports)
+
+    # ---- Today's program per center ----
+    todays_by_center = {}
+    for c in centers_order:
+        todays_by_center[c] = (
+            db.query(Appointment)
+            .options(
+                joinedload(Appointment.student),
+                joinedload(Appointment.service),
+            )
+            .filter(Appointment.center == c)
+            .filter(Appointment.day == today)
+            .filter(Appointment.status == "scheduled")
+            .order_by(Appointment.start_time.asc())
+            .all()
+        )
 
     return templates.TemplateResponse(
         "dashboard.html",
@@ -140,11 +196,13 @@ def dashboard(
             "user": user,
             "page": "dashboard",
             "today": today,
-            "total_students": total_students,
-            "reports_expiring": reports_expiring,
-            "reports_list": reports_list,
-            "todays_appointments": todays_appointments,
-            "payments_pending": payments_pending,
+            "exp_limit": exp_limit,
+            "centers_order": centers_order,
+            "centers_labels": centers_labels,
+            "student_counts_by_center": student_counts_by_center,
+            "reports_list_by_center": reports_list_by_center,
+            "reports_expiring_by_center": reports_expiring_by_center,
+            "todays_by_center": todays_by_center,
         },
     )
 
@@ -155,14 +213,17 @@ def dashboard(
 @router.get("/students", response_class=HTMLResponse)
 def students_page(
     request: Request,
+    center: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    students = (
-        db.query(Student)
-        .order_by(Student.last_name.asc(), Student.first_name.asc())
-        .all()
-    )
+    center_norm = normalize_center(center) if center else None
+
+    q = db.query(Student)
+    if center_norm:
+        q = q.filter(Student.center == center_norm)
+
+    students = q.order_by(Student.last_name.asc(), Student.first_name.asc()).all()
 
     return templates.TemplateResponse(
         "students.html",
@@ -418,6 +479,8 @@ def schedule_page(
     today = date.today()
     base = parse_date(week or "") or today
     week_start = start_of_week(base)
+    prev_week = (week_start - timedelta(days=7)).isoformat()
+    next_week = (week_start + timedelta(days=7)).isoformat()
 
     # Mon..Sat (6 μέρες)
     days = []
@@ -436,43 +499,28 @@ def schedule_page(
     center = normalize_center(center) if center else "Giannitsa"
     week_end = week_start + timedelta(days=5)
 
+    # ✅ Φόρτωσε appointments με student/service (για να εμφανίζονται ονόματα)
     appointments = (
         db.query(Appointment)
+        .options(joinedload(Appointment.student), joinedload(Appointment.service))
         .filter(Appointment.center == center)
         .filter(Appointment.day >= week_start)
         .filter(Appointment.day <= week_end)
+        .filter(Appointment.status.in_(["scheduled", "completed"]))  # προαιρετικό
         .order_by(Appointment.day.asc(), Appointment.start_time.asc())
         .all()
     )
+    week_days = [x["date"] for x in days]
+    appointments_by_day: dict[str, list[Appointment]] = {d.isoformat(): [] for d in week_days}
+
+    for ap in appointments:
+        appointments_by_day[ap.day.isoformat()].append(ap)
 
     students = db.query(Student).order_by(Student.last_name.asc(), Student.first_name.asc()).all()
     services = db.query(Service).order_by(Service.name.asc()).all()
 
-    # time slots (08:00-20:00 ανά 30')
-    time_slots = []
-    start_h = 8
-    end_h = 20
-    cur = datetime.combine(today, time(start_h, 0))
-    end_dt = datetime.combine(today, time(end_h, 0))
-    while cur <= end_dt:
-        time_slots.append(cur.strftime("%H:%M"))
-        cur += timedelta(minutes=30)
-
-    # grid key: YYYY-MM-DD|HH:MM -> list
-    grid: dict[str, list[dict]] = {}
-    for ap in appointments:
-        key = f"{ap.day.isoformat()}|{ap.start_time.strftime('%H:%M')}"
-        grid.setdefault(key, []).append(
-            {
-                "id": ap.id,
-                "student_name": ap.student.full_name if ap.student else ap.student_amka,
-                "service_name": ap.service.name if ap.service else str(ap.service_id),
-                "status": ap.status,
-            }
-        )
-
     # -------------------------------------------------
-    # ✅ ΥΠΟΛΟΙΠΑ ΣΥΝΕΔΡΙΩΝ (για schedule.html JS)
+    # ✅ Remaining sessions map (για schedule.html JS)
     # remaining = total_sessions - completed
     # -------------------------------------------------
     totals = (
@@ -502,8 +550,15 @@ def schedule_page(
         done = completed_map.get((amka, sid), 0)
         remaining_js_map[f"{amka}|{sid}"] = max(int(total) - int(done), 0)
 
-    # IMPORTANT: template θέλει JSON string
     remaining_js = json.dumps(remaining_js_map)
+
+    # -------------------------------------------------
+    # ✅ ΝΕΟ weekly-list data: week_days + appointments_by_day
+    # -------------------------------------------------
+    week_days = [x["date"] for x in days]  # list[date] (Mon..Sat)
+    appointments_by_day: dict[str, list[Appointment]] = {d.isoformat(): [] for d in week_days}
+    for ap in appointments:
+        appointments_by_day[ap.day.isoformat()].append(ap)
 
     return templates.TemplateResponse(
         "schedule.html",
@@ -517,13 +572,61 @@ def schedule_page(
             "center": center,
             "week_start": week_start,
             "week_start_str": week_start.isoformat(),
-            "days": days,
-            "time_slots": time_slots,
-            "grid": grid,
-            "remaining_js": remaining_js,  # ✅ string JSON
+            "days": days,  # αν το χρειάζεσαι αλλού
+            "remaining_js": remaining_js,
+            "today": today,
+            "prev_week": prev_week,
+            "next_week": next_week,
+
+            # ✅ αυτά έλειπαν και γι’ αυτό δεν έβλεπες τίποτα
+            "week_days": week_days,
+            "appointments_by_day": appointments_by_day,
         },
     )
 
+@router.get("/schedule/student-month")
+def schedule_student_month(
+    student_amka: str = Query(...),
+    year: int = Query(...),
+    month: int = Query(...),  # 1-12
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    # basic validation
+    if month < 1 or month > 12:
+        return {"items": []}
+
+    st = db.query(Student).filter(Student.amka == student_amka).first()
+    if not st:
+        return {"items": []}
+
+    first_day = date(year, month, 1)
+    last_day = date(year, month, monthrange(year, month)[1])
+
+    aps = (
+        db.query(Appointment)
+        .options(joinedload(Appointment.service))
+        .filter(Appointment.student_amka == student_amka)
+        .filter(Appointment.day >= first_day)
+        .filter(Appointment.day <= last_day)
+        .filter(Appointment.status.in_(["scheduled", "completed"]))  # αν θες, βγάλε completed/βάλε canceled
+        .order_by(Appointment.day.asc(), Appointment.start_time.asc())
+        .all()
+    )
+
+    items = []
+    for ap in aps:
+        items.append(
+            {
+                "day": ap.day.isoformat(),
+                "time": ap.start_time.strftime("%H:%M"),
+                "service": ap.service.name if ap.service else f"Service #{ap.service_id}",
+                "status": ap.status,
+                "id": ap.id,
+            }
+        )
+
+    return {"items": items}
 
 # -----------------------------
 # Schedule batch create
@@ -533,7 +636,7 @@ def schedule_create_batch(
     student_amka: str = Form(...),
     service_id: int = Form(...),
     start_day: str = Form(...),
-    start_time: str = Form(...),
+    start_time: str | None = Form(None),
     count: int = Form(...),
     duration_min: int = Form(45),
     skip_holidays: str | None = Form(None),
@@ -543,24 +646,47 @@ def schedule_create_batch(
     st = db.query(Student).filter(Student.amka == student_amka).first()
     svc = db.query(Service).filter(Service.id == service_id).first()
     if not st or not svc:
-        return RedirectResponse("/schedule?error=1", status_code=303)
+        return RedirectResponse("/schedule?error=not_found", status_code=303)
 
     d0 = parse_date(start_day)
-    t0 = parse_time_hhmm(start_time)
-    if not d0 or not t0:
-        return RedirectResponse("/schedule?error=1", status_code=303)
+    if not d0:
+        return RedirectResponse("/schedule?error=bad_date", status_code=303)
+
+    raw_time = (start_time or "").strip()
+    if raw_time:
+        t0 = parse_time_hhmm(raw_time)
+        if not t0:
+            return RedirectResponse("/schedule?error=bad_time", status_code=303)
+    else:
+        t0 = time(9, 0)
 
     st_center = normalize_center(st.center)
 
-    # δικαιούμενες συνεδρίες
+    # ---- 1) Έλεγχος λήξης γνωμάτευσης ----
+    expiry = st.assessment_expiry_date  # μπορεί να είναι None
+    if expiry is not None and d0 > expiry:
+        # αν ο χρήστης διάλεξε start_day μετά τη λήξη -> δεν γίνεται τίποτα
+        return RedirectResponse(
+            f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&error=expiry_limit",
+            status_code=303,
+        )
+
+    # ---- 2) Δικαιούμενες συνεδρίες (StudentService link) ----
     link = (
         db.query(StudentService)
         .filter(StudentService.student_amka == st.amka)
         .filter(StudentService.service_id == svc.id)
         .first()
     )
-    total_allowed = int(link.total_sessions or 0) if link else 0
+    if not link:
+        return RedirectResponse(
+            f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&error=service_not_assigned",
+            status_code=303,
+        )
 
+    total_allowed = int(link.total_sessions or 0)
+
+    # Μετράμε ήδη scheduled+completed ώστε να μην ξεπερνάμε
     used = (
         db.query(Appointment.id)
         .filter(Appointment.student_amka == st.amka)
@@ -586,6 +712,12 @@ def schedule_create_batch(
     cur_day = d0
 
     while created < to_create:
+
+        # ---- stop αν φτάσαμε/περάσαμε λήξη γνωμάτευσης ----
+        if expiry is not None and cur_day > expiry:
+            # δεν δημιουργούμε τίποτα πέρα από τη λήξη
+            break
+
         # skip Sunday always
         if cur_day.weekday() == 6:
             cur_day = cur_day + timedelta(days=7)
@@ -609,7 +741,16 @@ def schedule_create_batch(
         created += 1
         cur_day = cur_day + timedelta(days=7)
 
+    # Αν δεν μπορέσαμε να δημιουργήσουμε όσες ζητήθηκαν λόγω expiry (ή άλλων skips),
+    # κάνουμε commit όσες δημιουργήθηκαν και ενημερώνουμε με flag.
     db.commit()
+
+    # Αν κόπηκε λόγω λήξης, δείχνουμε μήνυμα
+    if created < to_create:
+        return RedirectResponse(
+            f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&partial=1&created={created}",
+            status_code=303,
+        )
 
     return RedirectResponse(
         f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&ok=1",
