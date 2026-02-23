@@ -14,6 +14,7 @@ from sqlalchemy import func
 
 from ..db import get_db
 from ..deps import get_current_user
+from ..deps import require_user, require_admin
 from ..models import (
     User,
     Student,
@@ -23,6 +24,8 @@ from ..models import (
     Payment,
     Holiday,
 )
+from fastapi import Depends
+from ..deps import require_user, require_admin
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -96,10 +99,10 @@ def is_holiday(db: Session, center: str, d: date) -> bool:
     )
 
 def _remaining_sessions(ss: StudentService) -> int:
-    """
-    Επιστρέφει πόσες συνεδρίες απομένουν για το συγκεκριμένο StudentService.
-    Προσαρμόζεται σε διαφορετικά πιθανά ονόματα πεδίων.
-    """
+    # """
+    # Επιστρέφει πόσες συνεδρίες απομένουν για το συγκεκριμένο StudentService.
+    # Προσαρμόζεται σε διαφορετικά πιθανά ονόματα πεδίων.
+    # """
     # Variant A: έχεις αποθηκευμένο "remaining_sessions"
     if hasattr(ss, "remaining_sessions") and ss.remaining_sessions is not None:
         return int(ss.remaining_sessions)

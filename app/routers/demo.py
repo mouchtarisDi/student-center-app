@@ -4,22 +4,20 @@
 # Το πιο σημαντικό είναι ότι δεν υπάρχει περίπτωση να αγγίξει real δεδομένα, 
 # γιατί το query φιλτράρει αποκλειστικά dataset="demo".
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from ..db import get_db
-from ..models import Student, Note, StudentService, User
-from ..deps import get_current_user
-from ..seed import seed_demo_data
+# """
+# Deprecated / optional demo router.
+
+# Το project αυτή τη στιγμή δεν χρησιμοποιεί dataset isolation (δεν υπάρχει πεδίο dataset στα models),
+# οπότε το παλιό “Reset Demo” router δεν μπορεί να δουλέψει σωστά όπως ήταν.
+
+# Αν θέλεις πραγματικό demo mode (οι αλλαγές του demo να μην ακουμπάνε τα real δεδομένα),
+# υπάρχουν 2 καθαρές λύσεις:
+# 1) Ξεχωριστή DB/schema για demo
+# 2) Πεδίο dataset σε όλα τα σχετικά tables (students, appointments, payments, κλπ)
+
+# Όταν αποφασίσεις ποια λύση θες, το ξαναφτιάχνουμε σωστά.
+# """
+
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/demo", tags=["demo"])
-
-@router.post("/reset")
-def reset_demo(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    # σβήνει ΜΟΝΟ demo
-    db.query(Note).filter(Note.dataset == "demo").delete()
-    db.query(StudentService).filter(StudentService.dataset == "demo").delete()
-    db.query(Student).filter(Student.dataset == "demo").delete()
-    db.commit()
-
-    seed_demo_data(db)
-    return {"ok": True}
