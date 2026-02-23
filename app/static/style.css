@@ -1971,3 +1971,298 @@ html[data-theme="dark"] .ap-chip{
 @media (max-width: 700px){
   .table-scroll{ max-height: 52vh; }
 }
+/* =========================
+   CARDS
+   ========================= */
+.card{
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.card-head{ padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.card-title{ display:flex; align-items:center; gap: 10px; }
+.card-title h2{ margin:0; font-size: 16px; font-weight: 900; }
+.card-body{ padding: 14px; }
+
+.page-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.page-title{ margin: 0; font-size: 22px; font-weight: 1000; }
+.page-subtitle{ margin: 4px 0 0; opacity: .82; }
+.page-actions{ display:flex; gap: 10px; align-items:center; }
+
+/* =========================
+   FORMS
+   ========================= */
+.form-grid{ display:flex; flex-direction: column; gap: 12px; }
+.form-grid.compact{ gap: 10px; }
+
+.grid-2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px){
+  .grid-2{ grid-template-columns: 1fr; }
+}
+
+.field{ display:flex; flex-direction: column; gap: 6px; }
+.field > span{ font-weight: 800; opacity: .92; }
+
+input, select, textarea{
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  outline: none;
+}
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(23,131,124,.55);
+  box-shadow: 0 0 0 3px rgba(23,131,124,.15);
+}
+.form-actions{ display:flex; justify-content: flex-end; gap: 10px; }
+
+/* ========================= */
+   BUTTONS
+/* ========================= */ 
+/* .btn{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-weight: 900;
+  cursor:pointer;
+}
+.btn:hover{ filter: brightness(1.06); }
+.btn-xs{ padding: 8px 10px; border-radius: 12px; font-size: 13px; }
+.btn-primary{ background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+.btn-danger{ background: var(--btn-danger-bg); color: var(--btn-danger-text); } */ */ */
+
+/* =========================
+   TABLE (grid-based)
+   ========================= */
+.table{ display: grid; gap: 6px; }
+
+/* default 4 columns table */
+.tr{
+  display: grid;
+  grid-template-columns: 1.2fr .6fr .8fr .6fr;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255,255,255,.55);
+}
+html[data-theme="dark"] .tr{ background: rgba(255,255,255,.05); }
+
+.tr.th{
+  font-weight: 900;
+  background: rgba(0,0,0,.03);
+}
+html[data-theme="dark"] .tr.th{ background: rgba(255,255,255,.06); }
+
+/* =========================
+   STUDENT PAGE GRID
+   ========================= */
+.grid-2-cards{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+
+  /* ✅ σημαντικό: να μην τεντώνει το ύψος και το διπλανό card */
+  align-items: start;
+}
+.grid-2-cards > .card{ align-self: start; }
+
+@media (max-width: 950px){
+  .grid-2-cards{ grid-template-columns: 1fr; }
+}
+
+.status.scheduled{ opacity: .85; }
+.status.completed{ color: #1b7f3a; font-weight: 800; }
+.status.canceled{ color: #d64545; font-weight: 800; }
+
+.divider{ height: 1px; background: var(--border); margin: 14px 0; }
+.empty-state{ opacity:.85; padding: 10px 0; }
+
+/* =========================
+   Key-Value grid
+   ========================= */
+.kv{
+  display:grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px 14px;
+  align-items: center;
+}
+@media (max-width: 700px){
+  .kv{ grid-template-columns: 1fr; }
+  .kv > div:nth-child(odd){ font-weight: 900; }
+}
+
+/* =========================
+   RENEW UI
+   ========================= */
+.renew-row{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
+.renew-form{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
+
+.renew-form .checkbox{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  font-size: .95rem;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--btn-bg);
+}
+.renew-panel{ width: 100%; margin-top: 10px; }
+.sessions-input{ width: 140px; max-width: 100%; }
+
+@media (max-width: 700px){
+  .renew-form{ width: 100%; }
+  .renew-form input[type="date"]{ flex: 1; }
+}
+
+/* =========================
+   PAYMENTS CARD (stable height + internal scroll)
+   ========================= */
+.payments-card{
+  display:flex;
+  flex-direction: column;
+  max-height: min(70vh, 620px);
+}
+.payments-card .card-body{
+  display:flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.payments-scroll{
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+/* header sticky inside scroll area */
+.payments-th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.payments-row{
+  /* columns: date | amount | comment | actions */
+  grid-template-columns: 1fr .7fr 1.4fr .9fr;
+}
+
+.ellipsis{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px){
+  .payments-row,
+  .payments-th{
+    grid-template-columns: 1fr .8fr 1.2fr 1fr;
+  }
+}
+
+/* =========================
+   MODAL
+   ========================= */
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,.45);
+  z-index: 999;
+}
+
+.modal-overlay.open{ display:flex; }
+
+.modal-card{
+  width: min(620px, 100%);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+.modal-title h3{
+  margin: 0;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.modal-close{
+  border-color: var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--text);
+}
+
+.modal-body{
+  padding: 14px;
+}
+
+.modal-actions{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.modal-actions-right{
+  display:flex;
+  gap: 10px;
+}
+
+.modal-danger{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  display:flex;
+  justify-content: flex-end;
+}
+
+/* =========================
+   LOGIN (center)
+   ========================= */
+/* σε /login η layout είναι ίδια, αλλά το content γίνεται center */
+.content-auth{
+  min-height: calc(100vh - var(--topbar-h));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
