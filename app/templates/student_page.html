@@ -38,35 +38,74 @@
       <div>Γενέθλια</div><div>{{ fmt_date_gr(student.date_of_birth) }}</div>
       <div>Γονέας</div><div>{{ student.parent_name or '-' }}</div>
       <div>Τηλέφωνο</div><div>{{ student.parent_phone or '-' }}</div>
+
       <div>Λήξη Γνωμάτευσης</div>
       <div>
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="renew-row">
           <b>{{ fmt_date_gr(student.assessment_expiry_date) }}</b>
 
-          <form method="post" action="/students/{{ student.amka }}/assessment/renew" style="display:flex; gap:8px; align-items:center;">
+          <form method="post" action="/students/{{ student.amka }}/assessment/renew" class="renew-form">
             <input type="date" name="assessment_expiry_date" required>
-            <button class="btn btn-xs btn-primary" type="submit">
+
+            <label class="checkbox">
+              <input type="checkbox" id="change_sessions_chk" name="change_sessions" value="1" onchange="toggleRenewSessions()">
+              Αλλαγή συνεδριών ανά υπηρεσία
+            </label>
+
+            <button class="btn btn-xs btn-primary" type="submit" onclick="return confirmRenew();">
               <span class="material-icons-outlined">update</span>
               Ανανέωση
             </button>
+
+            <div id="renew_sessions_panel" class="renew-panel" style="display:none;">
+              <div class="divider"></div>
+              <div style="font-size:0.95rem; margin-bottom:8px;">
+                <b>Νέος αριθμός συνεδριών (ανά υπηρεσία)</b>
+                <div style="opacity:0.85; margin-top:4px;">
+                  Αν αφήσεις κάποιο πεδίο κενό, θα κρατηθεί ο προηγούμενος αριθμός.
+                </div>
+              </div>
+
+              <div class="table">
+                <div class="tr th">
+                  <div>Υπηρεσία</div>
+                  <div>Συνεδρίες</div>
+                </div>
+                {% for x in services_info %}
+                  <div class="tr" style="grid-template-columns: 1fr 180px;">
+                    <div>{{ x.service.name }}</div>
+                    <div>
+                      <input
+                        type="number"
+                        min="0"
+                        name="sessions_{{ x.service.id }}"
+                        value="{{ x.total }}"
+                        class="sessions-input"
+                      >
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
           </form>
         </div>
       </div>
-      <div>Σχόλια</div><div>{{ student.admin_comment or '-' }}</div>
+
+      <div>Σχόλια</div><div>{{ student.notes or '-' }}</div>
     </div>
   </div>
 </div>
 
+<!-- 2 cards -->
 <div class="grid-2-cards">
-  <!-- Συνεδρίες ανά υπηρεσία -->
+  <!-- Συνεδρίες -->
   <div class="card">
     <div class="card-head">
       <div class="card-title">
-        <span class="material-icons-outlined">playlist_add_check</span>
+        <span class="material-icons-outlined">fact_check</span>
         <h2>Συνεδρίες ανά Υπηρεσία</h2>
       </div>
     </div>
-
     <div class="card-body">
       {% if services_info and services_info|length > 0 %}
         <div class="table">
@@ -92,7 +131,7 @@
   </div>
 
   <!-- Πληρωμές -->
-  <div class="card">
+  <div class="card payments-card">
     <div class="card-head">
       <div class="card-title">
         <span class="material-icons-outlined">payments</span>
@@ -101,6 +140,7 @@
     </div>
 
     <div class="card-body">
+      <!-- Νέα πληρωμή -->
       <form class="form-grid compact" method="post" action="/students/{{ student.amka }}/payments/new">
         <div class="grid-2">
           <label class="field">
@@ -129,20 +169,40 @@
 
       <div class="divider"></div>
 
+      <!-- Λίστα πληρωμών (scrollable, το card δεν μεγαλώνει) -->
       {% if payments and payments|length > 0 %}
-        <div class="table">
-          <div class="tr th">
-            <div>Ημ/νία</div>
-            <div>Ποσό</div>
-            <div>Σχόλιο</div>
-          </div>
-          {% for p in payments %}
-            <div class="tr">
-              <div>{{ fmt_date_gr(p.payment_date) }}</div>
-              <div>{{ "%.2f"|format(p.amount_cents / 100) }}€</div>
-              <div>{{ p.comment or '-' }}</div>
+        <div class="payments-scroll">
+          <div class="table">
+            <div class="tr th payments-th">
+              <div>Ημ/νία</div>
+              <div>Ποσό</div>
+              <div>Σχόλιο</div>
+              <div>Ενέργειες</div>
             </div>
-          {% endfor %}
+
+            {% for p in payments %}
+              <div class="tr payments-row">
+                <div>{{ fmt_date_gr(p.payment_date) }}</div>
+                <div>{{ "%.2f"|format(p.amount_cents / 100) }}€</div>
+                <div class="ellipsis">{{ p.comment or '-' }}</div>
+                <div>
+                  <button
+                    class="btn btn-xs"
+                    type="button"
+                    onclick="openPaymentModal(this)"
+                    data-payment-id="{{ p.id }}"
+                    data-payment-date="{{ p.payment_date.isoformat() }}"
+                    data-payment-amount="{{ "%.2f"|format(p.amount_cents/100) }}"
+                    data-payment-comment="{{ p.comment or '' }}"
+                    title="Επεξεργασία πληρωμής"
+                  >
+                    <span class="material-icons-outlined">edit</span>
+                    Επεξεργασία
+                  </button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
         </div>
       {% else %}
         <div class="empty-state">Δεν υπάρχουν πληρωμές.</div>
@@ -163,61 +223,154 @@
   <div class="card-body">
     {% if appointments and appointments|length > 0 %}
       <div class="table">
-        <div class="tr th">
-          <div>Ημ/νία</div>
+        <div class="tr th" style="grid-template-columns: 1fr .7fr 1fr .8fr;">
+          <div>Ημερομηνία</div>
           <div>Ώρα</div>
           <div>Υπηρεσία</div>
           <div>Κατάσταση</div>
-          <div>Ενέργειες</div>
         </div>
-
-        {% for ap in appointments %}
-          <div class="tr">
-            <div>{{ fmt_date_gr(ap.day) }}</div>
-            <div>{{ ap.start_time.strftime("%H:%M") }}</div>
-            <div>{{ ap.service.name if ap.service else ap.service_id }}</div>
-
-            <div class="status {{ ap.status }}">{{ ap.status }}</div>
-
-            <div class="row-actions">
-              <!-- Ολοκλήρωση -->
-              <form method="post" action="/schedule/{{ ap.id }}/status" class="inline-form">
-                <input type="hidden" name="status" value="completed">
-                <input type="hidden" name="next" value="/students/{{ student.amka }}">
-                <button class="icon-pill icon-success" type="submit" title="Ολοκληρώθηκε"
-                        {% if ap.status == "completed" %}disabled{% endif %}>
-                  <span class="material-icons-outlined">check</span>
-                </button>
-              </form>
-
-              <!-- Ακύρωση -->
-              <form method="post" action="/schedule/{{ ap.id }}/status" class="inline-form"
-                    onsubmit="return confirm('Σίγουρα ακύρωση συνεδρίας;');">
-                <input type="hidden" name="status" value="canceled">
-                <input type="hidden" name="next" value="/students/{{ student.amka }}">
-                <button class="icon-pill icon-danger" type="submit" title="Ακύρωση"
-                        {% if ap.status == "canceled" %}disabled{% endif %}>
-                  <span class="material-icons-outlined">close</span>
-                </button>
-              </form>
-
-              <!-- Επαναφορά σε scheduled -->
-              <form method="post" action="/schedule/{{ ap.id }}/status" class="inline-form">
-                <input type="hidden" name="status" value="scheduled">
-                <input type="hidden" name="next" value="/students/{{ student.amka }}">
-                <button class="icon-pill" type="submit" title="Επαναφορά σε προγραμματισμένη"
-                        {% if ap.status == "scheduled" %}disabled{% endif %}>
-                  <span class="material-icons-outlined">history</span>
-                </button>
-              </form>
-            </div>
+        {% for a in appointments %}
+          <div class="tr" style="grid-template-columns: 1fr .7fr 1fr .8fr;">
+            <div>{{ fmt_date_gr(a.date) }}</div>
+            <div>{{ a.time }}</div>
+            <div>{{ a.service.name if a.service else '-' }}</div>
+            <div class="status {{ a.status }}">{{ a.status }}</div>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <div class="empty-state">Δεν υπάρχουν συνεδρίες.</div>
+      <div class="empty-state">Δεν υπάρχουν προγραμματισμένες συνεδρίες.</div>
     {% endif %}
   </div>
 </div>
 
+<!-- =========================
+     MODAL: Επεξεργασία Πληρωμής
+     ========================= -->
+<div id="paymentModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Επεξεργασία Πληρωμής">
+    <div class="modal-head">
+      <div class="modal-title">
+        <span class="material-icons-outlined">edit</span>
+        <h3>Επεξεργασία Πληρωμής</h3>
+      </div>
+      <button class="icon-btn modal-close" type="button" onclick="closePaymentModal()" aria-label="Close">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="paymentEditForm" method="post" action="">
+        <div class="grid-2">
+          <label class="field">
+            <span>Ημερομηνία</span>
+            <input id="pm_date" type="date" name="payment_date" required>
+          </label>
+
+          <label class="field">
+            <span>Ποσό (€)</span>
+            <input id="pm_amount" type="text" name="amount" required>
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Σχόλιο</span>
+          <input id="pm_comment" type="text" name="comment" placeholder="π.χ. Φεβρουάριος">
+        </label>
+
+        <div class="modal-actions">
+          <form id="paymentDeleteForm" method="post" action="" onsubmit="return confirm('Σίγουρα διαγραφή πληρωμής;');">
+            <!-- αυτό το form θα ενημερωθεί δυναμικά -->
+          </form>
+
+          <div class="modal-actions-right">
+            <button class="btn" type="button" onclick="closePaymentModal()">
+              <span class="material-icons-outlined">close</span>
+              Ακύρωση
+            </button>
+
+            <button class="btn btn-primary" type="submit">
+              <span class="material-icons-outlined">save</span>
+              Αποθήκευση
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-danger">
+        <form id="paymentDeleteForm2" method="post" action="" onsubmit="return confirm('Σίγουρα διαγραφή πληρωμής;');">
+          <button class="btn btn-danger" type="submit">
+            <span class="material-icons-outlined">delete</span>
+            Διαγραφή πληρωμής
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleRenewSessions(){
+    const chk = document.getElementById('change_sessions_chk');
+    const panel = document.getElementById('renew_sessions_panel');
+    if (!chk || !panel) return;
+    panel.style.display = chk.checked ? 'block' : 'none';
+  }
+
+  function confirmRenew(){
+    const chk = document.getElementById('change_sessions_chk');
+    if (chk && chk.checked){
+      return confirm('Θέλεις να ανανεώσεις τη γνωμάτευση και να αλλάξεις τις συνεδρίες ανά υπηρεσία;');
+    }
+    return confirm('Θέλεις να ανανεώσεις τη γνωμάτευση;');
+  }
+
+  const modalEl = document.getElementById('paymentModal');
+  const editForm = document.getElementById('paymentEditForm');
+  const delForm = document.getElementById('paymentDeleteForm2');
+
+  function openPaymentModal(btn){
+    const id = btn.dataset.paymentId;
+    const date = btn.dataset.paymentDate;
+    const amount = btn.dataset.paymentAmount;
+    const comment = btn.dataset.paymentComment || "";
+
+    // endpoints
+    editForm.action = `/students/{{ student.amka }}/payments/${id}/edit`;
+    delForm.action = `/students/{{ student.amka }}/payments/${id}/delete`;
+
+    // fill fields
+    document.getElementById('pm_date').value = date;
+    document.getElementById('pm_amount').value = amount;
+    document.getElementById('pm_comment').value = comment;
+
+    // open
+    modalEl.classList.add('open');
+    modalEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+
+    // focus
+    setTimeout(() => document.getElementById('pm_date').focus(), 50);
+  }
+
+  function closePaymentModal(){
+    modalEl.classList.remove('open');
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+  }
+
+  // click outside to close
+  modalEl.addEventListener('click', (e) => {
+    if (e.target === modalEl){
+      closePaymentModal();
+    }
+  });
+
+  // ESC to close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalEl.classList.contains('open')){
+      closePaymentModal();
+    }
+  });
+</script>
 {% endblock %}

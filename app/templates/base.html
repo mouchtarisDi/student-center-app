@@ -5,22 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}KidsLogix{% endblock %}</title>
 
-  <!-- Google Material Icons (NOT Symbols) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined">
-
-  <link rel="stylesheet" href="/static/style.css?v=6" />
+  <link rel="stylesheet" href="/static/style.css?v=8" />
   {% block extra_css %}{% endblock %}
 </head>
 
-<body>
+<body class="{% if request.url.path == '/login' %}auth-page{% endif %}">
   <div class="app-shell">
-    <!-- TOP NAVBAR -->
+
+    <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
-        <button class="icon-btn topbar-btn" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
-          <span class="material-icons-outlined">menu</span>
-        </button>
-
+        {% if request.url.path != '/login' %}
+          <button class="icon-btn topbar-btn" id="sidebarToggle" type="button" aria-label="Toggle sidebar">
+            <span class="material-icons-outlined">menu</span>
+          </button>
+        {% endif %}
         <div class="brand">
           <span class="brand-title">KidsLogix</span>
         </div>
@@ -31,57 +31,61 @@
           <span class="material-icons-outlined" id="themeIcon">dark_mode</span>
         </button>
 
-        <a class="icon-btn topbar-btn" href="/auth/logout" aria-label="Logout" title="Logout">
-          <span class="material-icons-outlined">logout</span>
-        </a>
+        {% if request.url.path != '/login' %}
+          <a class="icon-btn topbar-btn" href="/auth/logout" aria-label="Logout" title="Logout">
+            <span class="material-icons-outlined">logout</span>
+          </a>
+        {% endif %}
       </div>
     </header>
 
-    <!-- MAIN LAYOUT: SIDEBAR + CONTENT -->
-    <div class="layout">
-      <aside class="sidebar" id="sidebar">
-        <nav class="nav">
-          {% set path = request.url.path %}
+    <!-- LAYOUT -->
+    <div class="layout {% if request.url.path == '/login' %}layout-auth{% endif %}">
+      {% if request.url.path != '/login' %}
+        <aside class="sidebar" id="sidebar">
+          <nav class="nav">
+            {% set path = request.url.path %}
 
-          <a class="nav-item {% if path == '/' %}active{% endif %}" href="/">
-            <span class="material-icons-outlined nav-ic">grid_view</span>
-            <span class="nav-txt">Dashboard</span>
-          </a>
+            <a class="nav-item {% if path == '/' %}active{% endif %}" href="/">
+              <span class="material-icons-outlined nav-ic">grid_view</span>
+              <span class="nav-txt">Dashboard</span>
+            </a>
 
-          <a class="nav-item {% if path.startswith('/students') and path != '/students/new' %}active{% endif %}" href="/students">
-            <span class="material-icons-outlined nav-ic">groups</span>
-            <span class="nav-txt">Μαθητές</span>
-          </a>
+            <a class="nav-item {% if path.startswith('/students') and path != '/students/new' %}active{% endif %}" href="/students">
+              <span class="material-icons-outlined nav-ic">groups</span>
+              <span class="nav-txt">Μαθητές</span>
+            </a>
 
-          <a class="nav-item {% if path == '/students/new' %}active{% endif %}" href="/students/new">
-            <span class="material-icons-outlined nav-ic">person_add</span>
-            <span class="nav-txt">Νέος Μαθητής</span>
-          </a>
+            <a class="nav-item {% if path == '/students/new' %}active{% endif %}" href="/students/new">
+              <span class="material-icons-outlined nav-ic">person_add</span>
+              <span class="nav-txt">Νέος Μαθητής</span>
+            </a>
 
-          <a class="nav-item {% if path.startswith('/schedule') %}active{% endif %}" href="/schedule">
-            <span class="material-icons-outlined nav-ic">calendar_month</span>
-            <span class="nav-txt">Πρόγραμμα</span>
-          </a>
+            <a class="nav-item {% if path.startswith('/schedule') %}active{% endif %}" href="/schedule">
+              <span class="material-icons-outlined nav-ic">calendar_month</span>
+              <span class="nav-txt">Πρόγραμμα</span>
+            </a>
 
-          <a class="nav-item {% if page=='holidays' %}active{% endif %}" href="/holidays">
-            <span class="material-icons-outlined">event_busy</span>
-            <span>Αργίες</span>
-          </a>
-        </nav>
+            <a class="nav-item {% if path.startswith('/holidays') %}active{% endif %}" href="/holidays">
+              <span class="material-icons-outlined nav-ic">event_busy</span>
+              <span class="nav-txt">Αργίες</span>
+            </a>
+          </nav>
 
-        <div class="sidebar-footer">
-          <div class="meta-row">
-            <span class="material-icons-outlined">person</span>
-            <span>Logged in: <b>{{ user.username if user else '-' }}</b></span>
+          <div class="sidebar-footer">
+            <div class="meta-row">
+              <span class="material-icons-outlined">person</span>
+              <span>Logged in: <b>{{ user.username if user else '-' }}</b></span>
+            </div>
+            <div class="meta-row">
+              <span class="material-icons-outlined">shield</span>
+              <span>Role: <b>{{ user.role if user else '-' }}</b></span>
+            </div>
           </div>
-          <div class="meta-row">
-            <span class="material-icons-outlined">shield</span>
-            <span>Role: <b>{{ user.role if user else '-' }}</b></span>
-          </div>
-        </div>
-      </aside>
+        </aside>
+      {% endif %}
 
-      <main class="content">
+      <main class="content {% if request.url.path == '/login' %}content-auth{% endif %}">
         {% block content %}{% endblock %}
       </main>
     </div>
@@ -113,7 +117,7 @@
         });
       }
 
-      // SIDEBAR TOGGLE
+      // SIDEBAR TOGGLE (μόνο όταν υπάρχει sidebar)
       const sidebar = document.getElementById("sidebar");
       const sidebarToggle = document.getElementById("sidebarToggle");
 
@@ -125,26 +129,12 @@
       const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "1";
       setCollapsed(savedCollapsed);
 
-      if (sidebarToggle){
+      if (sidebar && sidebarToggle){
         sidebarToggle.addEventListener("click", () => {
           const nowCollapsed = !document.body.classList.contains("sidebar-collapsed");
           setCollapsed(nowCollapsed);
         });
       }
-
-      // Close sidebar on small screens when clicking outside
-      document.addEventListener("click", (e) => {
-        const isMobile = window.matchMedia("(max-width: 900px)").matches;
-        if (!isMobile) return;
-        if (!sidebar) return;
-
-        const clickedToggle = sidebarToggle && sidebarToggle.contains(e.target);
-        const clickedInsideSidebar = sidebar.contains(e.target);
-
-        if (!clickedToggle && !clickedInsideSidebar && !document.body.classList.contains("sidebar-collapsed")){
-          setCollapsed(true);
-        }
-      });
     })();
   </script>
 

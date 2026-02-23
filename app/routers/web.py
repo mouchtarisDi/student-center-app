@@ -14,7 +14,6 @@ from sqlalchemy import func
 
 from ..db import get_db
 from ..deps import get_current_user
-from ..deps import require_user, require_admin
 from ..models import (
     User,
     Student,
@@ -24,8 +23,6 @@ from ..models import (
     Payment,
     Holiday,
 )
-from fastapi import Depends
-from ..deps import require_user, require_admin
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -99,10 +96,10 @@ def is_holiday(db: Session, center: str, d: date) -> bool:
     )
 
 def _remaining_sessions(ss: StudentService) -> int:
-    # """
-    # Επιστρέφει πόσες συνεδρίες απομένουν για το συγκεκριμένο StudentService.
-    # Προσαρμόζεται σε διαφορετικά πιθανά ονόματα πεδίων.
-    # """
+    """
+    Επιστρέφει πόσες συνεδρίες απομένουν για το συγκεκριμένο StudentService.
+    Προσαρμόζεται σε διαφορετικά πιθανά ονόματα πεδίων.
+    """
     # Variant A: έχεις αποθηκευμένο "remaining_sessions"
     if hasattr(ss, "remaining_sessions") and ss.remaining_sessions is not None:
         return int(ss.remaining_sessions)
@@ -412,48 +409,117 @@ def student_page(
 # -----------------------------
 # Add payment
 # -----------------------------
+# --- PAYMENTS ---
+
 @router.post("/students/{amka}/payments/new")
-def payment_create(
-    amka: str,
-    payment_date: str = Form(...),
-    amount: str = Form(...),
-    comment: str = Form(""),
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    st = db.query(Student).filter(Student.amka == amka).first()
-    if not st:
-        return RedirectResponse("/students", status_code=303)
+def add_payment(amka: str,
+                payment_date: str = Form(...),
+                amount: str = Form(...),
+                comment: str = Form(""),
+                db: Session = Depends(get_db),
+                user=Depends(get_current_user)):
+    student = db.query(Student).filter(Student.amka == amka).first()
+    if not student:
+        return RedirectResponse(url="/students", status_code=303)
 
-    d = parse_date(payment_date)
-    if not d:
-        return RedirectResponse(f"/students/{amka}?pay_error=1", status_code=303)
-
-    a = (amount or "").strip().replace(",", ".")
-    try:
-        cents = int(round(float(a) * 100))
-    except ValueError:
-        return RedirectResponse(f"/students/{amka}?pay_error=1", status_code=303)
+    # amount -> cents
+    amount_norm = amount.replace(",", ".").strip()
+    cents = int(round(float(amount_norm) * 100))
 
     p = Payment(
-        student_amka=amka,
-        payment_date=d,
+        student_amka=student.amka,
+        payment_date=date.fromisoformat(payment_date),
         amount_cents=cents,
-        comment=(comment or "").strip() or None,
+        comment=(comment or "").strip() or None
     )
     db.add(p)
     db.commit()
+    return RedirectResponse(url=f"/students/{student.amka}", status_code=303)
 
-    return RedirectResponse(f"/students/{amka}", status_code=303)
+
+@router.post("/students/{amka}/payments/{payment_id}/edit")
+def edit_payment(amka: str,
+                 payment_id: int,
+                 payment_date: str = Form(...),
+                 amount: str = Form(...),
+                 comment: str = Form(""),
+                 db: Session = Depends(get_db),
+                 user=Depends(get_current_user)):
+    p = db.query(Payment).filter(Payment.id == payment_id, Payment.student_amka == amka).first()
+    if not p:
+        return RedirectResponse(url=f"/students/{amka}", status_code=303)
+
+    amount_norm = amount.replace(",", ".").strip()
+    p.amount_cents = int(round(float(amount_norm) * 100))
+    p.payment_date = date.fromisoformat(payment_date)
+    p.comment = (comment or "").strip() or None
+
+    db.commit()
+    return RedirectResponse(url=f"/students/{amka}", status_code=303)
+
+
+@router.post("/students/{amka}/payments/{payment_id}/delete")
+def delete_payment(amka: str,
+                   payment_id: int,
+                   db: Session = Depends(get_db),
+                   user=Depends(get_current_user)):
+    p = db.query(Payment).filter(Payment.id == payment_id, Payment.student_amka == amka).first()
+    if p:
+        db.delete(p)
+        db.commit()
+    return RedirectResponse(url=f"/students/{amka}", status_code=303)
+
+# # -----------------------------
+# # Edit payment
+# # -----------------------------
+# @router.post("/students/{amka}/payments/{payment_id}/edit")
+# def payment_edit(
+#     amka: str,
+#     payment_id: int,
+#     payment_date: str = Form(...),
+#     amount: str = Form(...),
+#     comment: str = Form(""),
+#     db: Session = Depends(get_db),
+#     user: User = Depends(get_current_user),
+# ):
+#     st = db.query(Student).filter(Student.amka == amka).first()
+#     if not st:
+#         return RedirectResponse("/students", status_code=303)
+
+#     p = db.query(Payment).filter(Payment.id == payment_id).filter(Payment.student_amka == amka).first()
+#     if not p:
+#         return RedirectResponse(f"/students/{amka}", status_code=303)
+
+#     d = parse_date(payment_date)
+#     if not d:
+#         return RedirectResponse(f"/students/{amka}?pay_edit_error=1", status_code=303)
+
+#     a = (amount or "").strip().replace(",", ".")
+#     try:
+#         cents = int(round(float(a) * 100))
+#     except ValueError:
+#         return RedirectResponse(f"/students/{amka}?pay_edit_error=1", status_code=303)
+
+#     if cents < 0:
+#         cents = 0
+
+#     p.payment_date = d
+#     p.amount_cents = cents
+#     p.comment = (comment or "").strip() or None
+#     db.commit()
+
+#     return RedirectResponse(f"/students/{amka}?pay_edit_ok=1", status_code=303)
 
 
 @router.post("/students/{amka}/assessment/renew")
-def renew_assessment(
+async def renew_assessment(
     amka: str,
+    request: Request,
     assessment_expiry_date: str = Form(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+
     st = db.query(Student).filter(Student.amka == amka).first()
     if not st:
         return RedirectResponse("/students", status_code=303)
@@ -461,6 +527,46 @@ def renew_assessment(
     d = parse_date(assessment_expiry_date)
     if not d:
         return RedirectResponse(f"/students/{amka}?renew_error=1", status_code=303)
+
+    form = await request.form()
+    change_sessions = (form.get("change_sessions") or "").strip() in {
+        "1",
+        "true",
+        "True",
+        "yes",
+        "on",
+    }
+
+    links = (
+        db.query(StudentService)
+        .options(joinedload(StudentService.service))
+        .filter(StudentService.student_amka == amka)
+        .all()
+    )
+
+    for link in links:
+        used_count = (
+            db.query(Appointment.id)
+            .filter(Appointment.student_amka == amka)
+            .filter(Appointment.service_id == link.service_id)
+            .filter(Appointment.status.in_(["scheduled", "completed"]))
+            .count()
+        )
+
+        old_declared = int(link.total_sessions or 0)
+
+        if change_sessions:
+            raw = (form.get(f"sessions_{link.service_id}") or "").strip()
+            try:
+                desired_available = int(raw)
+            except ValueError:
+                desired_available = old_declared
+            if desired_available < 0:
+                desired_available = 0
+        else:
+            desired_available = old_declared
+
+        link.total_sessions = int(desired_available) + int(used_count)
 
     st.assessment_expiry_date = d
     db.commit()
@@ -779,8 +885,14 @@ async def schedule_update_status(
     if status not in {"scheduled", "completed", "canceled"}:
         return RedirectResponse("/schedule", status_code=303)
 
-    ap.status = status
-    db.commit()
+    # Ζητούμενο: όταν ακυρώνεται μια συνεδρία να "σβήνεται γενικά" (να μην φαίνεται
+    # ούτε στο πρόγραμμα μαθητή). Άρα αντί για status=canceled, τη διαγράφουμε.
+    if status == "canceled":
+        db.delete(ap)
+        db.commit()
+    else:
+        ap.status = status
+        db.commit()
 
     form = await request.form()
     next_url = (form.get("next") or "").strip()
