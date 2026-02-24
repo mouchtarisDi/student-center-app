@@ -185,9 +185,9 @@
                 <div>{{ fmt_date_gr(p.payment_date) }}</div>
                 <div>{{ "%.2f"|format(p.amount_cents / 100) }}€</div>
                 <div class="ellipsis">{{ p.comment or '-' }}</div>
-                <div>
+                <div class="row-actions">
                   <button
-                    class="btn btn-xs"
+                    class="icon-pill"
                     type="button"
                     onclick="openPaymentModal(this)"
                     data-payment-id="{{ p.id }}"
@@ -195,9 +195,9 @@
                     data-payment-amount="{{ "%.2f"|format(p.amount_cents/100) }}"
                     data-payment-comment="{{ p.comment or '' }}"
                     title="Επεξεργασία πληρωμής"
+                    aria-label="Επεξεργασία πληρωμής"
                   >
                     <span class="material-icons-outlined">edit</span>
-                    Επεξεργασία
                   </button>
                 </div>
               </div>

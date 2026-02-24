@@ -363,7 +363,6 @@ html[data-theme="dark"] .topbar-btn{
   margin: 14px 0;
 }
 
-
 /* =========================
    LAYOUT
    ========================= */
@@ -927,8 +926,8 @@ html[data-theme="dark"] .ap-chip{
   white-space: nowrap;
 }
 
-#add-student-btn { 
-  background: #17837ca8; 
+#add-student-btn {
+  background: #17837ca8;
 }
 
 /* -----------------------------
@@ -2030,26 +2029,6 @@ input:focus, select:focus, textarea:focus{
 }
 .form-actions{ display:flex; justify-content: flex-end; gap: 10px; }
 
-/* ========================= */
-   BUTTONS
-/* ========================= */ 
-/* .btn{
-  display:inline-flex;
-  align-items:center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  font-weight: 900;
-  cursor:pointer;
-}
-.btn:hover{ filter: brightness(1.06); }
-.btn-xs{ padding: 8px 10px; border-radius: 12px; font-size: 13px; }
-.btn-primary{ background: var(--btn-primary-bg); color: var(--btn-primary-text); }
-.btn-danger{ background: var(--btn-danger-bg); color: var(--btn-danger-text); } */ */ */
-
 /* =========================
    TABLE (grid-based)
    ========================= */
@@ -2255,6 +2234,81 @@ html[data-theme="dark"] .tr.th{ background: rgba(255,255,255,.06); }
   justify-content: flex-end;
 }
 
+/* PAYMENTS: ΔΕΝ μεγαλώνει — max ~2 payments και μετά scroll */
+.payments-card{
+  display:flex;
+  flex-direction: column;
+}
+.payments-card .card-body{
+  display:flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ο wrapper που σκρολάρει */
+.payments-scroll{
+  overflow:auto;
+  min-height:0;
+  padding-right: 6px;
+  border-radius: 14px;
+}
+
+/* “2 rows max” (header + 2 entries περίπου) */
+.payments-scroll-2{
+  max-height: 210px; /* ✅ πρακτικά δείχνει ~2 πληρωμές */
+}
+
+/* sticky header μέσα στο scroll */
+.payments-th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* payments row columns */
+.payments-row{ grid-template-columns: 1fr .7fr 1.2fr 1fr; }
+
+/* MODAL */
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+  background: rgba(0,0,0,.45);
+  z-index:999;
+}
+.modal-overlay.open{ display:flex; }
+.modal-card{
+  width: min(620px, 100%);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  overflow:hidden;
+}
+.modal-head{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-title{ display:flex; align-items:center; gap:10px; }
+.modal-title h3{ margin:0; font-size:16px; font-weight: 950; }
+.modal-close{ color: var(--text); border-color: var(--btn-border); background: var(--btn-bg); }
+.modal-body{ padding: 14px; }
+.modal-actions{ display:flex; justify-content:flex-end; margin-top: 12px; }
+.modal-actions-right{ display:flex; gap:10px; }
+.modal-danger{
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  display:flex;
+  justify-content:flex-end;
+}
+
 /* =========================
    LOGIN (center)
    ========================= */
@@ -2265,4 +2319,63 @@ html[data-theme="dark"] .tr.th{ background: rgba(255,255,255,.06); }
   align-items:center;
   justify-content:center;
   padding: 18px;
+}
+
+/* ============================================================
+   ΠΡΟΣΘΗΚΗ / OVERRIDES (ΜΟΝΟ για payments scroll & edit icon)
+   ============================================================ */
+/* Θέλουμε το payments card να ΜΗΝ μεγαλώνει με τις πληρωμές.
+   Να δείχνει περίπου 2 πληρωμές και μετά scroll μέσα στη λίστα. */
+.payments-card{
+  max-height: none !important; /* override τυχόν παλιού max-height */
+}
+
+/* Περιορίζουμε το ύψος της λίστας πληρωμών (header + ~2 rows) */
+.payments-scroll{
+  flex: 0 0 auto;     /* να μη “τραβάει” ύψος */
+  max-height: 180px;  /* ~2 πληρωμές */
+  overflow: auto;
+  padding-right: 6px;
+}
+
+/* Sticky header μέσα στο scroll area */
+.payments-th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  opacity: 1;
+}
+
+/* actions column right align if present */
+.row-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+/* icon-only “pencil” button */
+.icon-pill{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.85);
+  cursor: pointer;
+  padding: 0;
+}
+html[data-theme="dark"] .icon-pill{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+}
+.icon-pill .material-icons-outlined{
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Σε πολύ μικρές οθόνες δίνουμε λίγο παραπάνω */
+@media (max-width: 700px){
+  .payments-scroll{ max-height: 260px; }
 }

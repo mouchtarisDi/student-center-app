@@ -328,6 +328,41 @@ async def student_create(
 # -----------------------------
 # Student page
 # -----------------------------
+@router.post("/students/{amka}/delete")
+def delete_student(
+    amka: str,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    student = db.query(Student).filter(Student.amka == amka).first()
+    if not student:
+        return RedirectResponse(url="/students", status_code=303)
+
+    # Αν ΔΕΝ έχεις cascade deletes στις relationships,
+    # σβήνουμε πρώτα τα "παιδιά" (payments/appointments).
+    # Αν έχεις cascade, αυτά δεν πειράζουν, απλά δεν βλάπτουν.
+
+    try:
+        # Payments
+        if "Payment" in globals():
+            db.query(Payment).filter(Payment.student_amka == amka).delete(synchronize_session=False)
+
+        # Appointments / Sessions
+        if "Appointment" in globals():
+            db.query(Appointment).filter(Appointment.student_amka == amka).delete(synchronize_session=False)
+
+        # Αν έχεις κι άλλα tables που συνδέονται με student_amka,
+        # πρόσθεσε παρόμοιες γραμμές εδώ.
+
+        db.delete(student)
+        db.commit()
+    except Exception:
+        db.rollback()
+        # Προαιρετικά: μπορείς να κάνεις log το exception
+        return RedirectResponse(url=f"/students/{amka}", status_code=303)
+
+    return RedirectResponse(url="/students", status_code=303)
+
 @router.get("/students/{amka}", response_class=HTMLResponse)
 def student_page(
     amka: str,
@@ -468,47 +503,6 @@ def delete_payment(amka: str,
         db.delete(p)
         db.commit()
     return RedirectResponse(url=f"/students/{amka}", status_code=303)
-
-# # -----------------------------
-# # Edit payment
-# # -----------------------------
-# @router.post("/students/{amka}/payments/{payment_id}/edit")
-# def payment_edit(
-#     amka: str,
-#     payment_id: int,
-#     payment_date: str = Form(...),
-#     amount: str = Form(...),
-#     comment: str = Form(""),
-#     db: Session = Depends(get_db),
-#     user: User = Depends(get_current_user),
-# ):
-#     st = db.query(Student).filter(Student.amka == amka).first()
-#     if not st:
-#         return RedirectResponse("/students", status_code=303)
-
-#     p = db.query(Payment).filter(Payment.id == payment_id).filter(Payment.student_amka == amka).first()
-#     if not p:
-#         return RedirectResponse(f"/students/{amka}", status_code=303)
-
-#     d = parse_date(payment_date)
-#     if not d:
-#         return RedirectResponse(f"/students/{amka}?pay_edit_error=1", status_code=303)
-
-#     a = (amount or "").strip().replace(",", ".")
-#     try:
-#         cents = int(round(float(a) * 100))
-#     except ValueError:
-#         return RedirectResponse(f"/students/{amka}?pay_edit_error=1", status_code=303)
-
-#     if cents < 0:
-#         cents = 0
-
-#     p.payment_date = d
-#     p.amount_cents = cents
-#     p.comment = (comment or "").strip() or None
-#     db.commit()
-
-#     return RedirectResponse(f"/students/{amka}?pay_edit_ok=1", status_code=303)
 
 
 @router.post("/students/{amka}/assessment/renew")
