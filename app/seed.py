@@ -6,13 +6,7 @@ from .security import hash_password
 
 
 def seed_users(db: Session) -> None:
-    # """
-    # Δημιουργεί τους default χρήστες ΜΟΝΟ αν ο πίνακας users είναι άδειος.
 
-    # Για production:
-    # - Βάλε env vars ώστε να μην έχεις default credentials:
-    #   ADMIN_USERNAME, ADMIN_PASSWORD, DEMO_USERNAME, DEMO_PASSWORD
-    # """
     if db.query(User).count() > 0:
         return
 

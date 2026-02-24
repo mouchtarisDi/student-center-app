@@ -1,11 +1,3 @@
-# Αυτό το αρχείο ορίζει τα Pydantic models που είναι το “συμβόλαιο” του API. 
-# Δηλαδή τι JSON επιτρέπουμε να έρθει (validation) και τι JSON επιστρέφουμε. 
-# Αυτό σε προστατεύει από κακά/λάθος δεδομένα, σου φτιάχνει σωστό Swagger docs, 
-# και σε κρατάει ασφαλή γιατί δεν υπάρχει περίπτωση να επιστρέψεις κατά λάθος sensitive πεδία 
-# (π.χ. password_hash) αφού δεν υπάρχουν στα response schemas. 
-# Το StudentDetailOut είναι βολικό γιατί επιστρέφει μαθητή μαζί με τις υπηρεσίες του 
-# σε μία απάντηση για εύκολο frontend.
-
 from datetime import datetime, date
 from pydantic import BaseModel, Field
 

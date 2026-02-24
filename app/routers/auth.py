@@ -1,13 +1,3 @@
-# Οι routers είναι ο τρόπος που οργανώνουμε τα endpoints. 
-# Χωρίζουμε auth endpoints από student endpoints και demo endpoints 
-# ώστε να είναι καθαρό το API και ευανάγνωστο. 
-# Κάθε router έχει prefix (/auth, /students, /demo) και tags ώστε να εμφανίζεται σωστά στο Swagger. 
-# Το σημαντικό είναι ότι τα endpoints “κλειδώνουν” με Depends(get_current_user), 
-# άρα χωρίς token παίρνεις 401. Το dataset isolation εφαρμόζεται σε κάθε query μέσω resolve_dataset(user).
-
-# Αυτό το router υλοποιεί το login. Παίρνει username/password, βρίσκει τον χρήστη, 
-# ελέγχει bcrypt hash, και επιστρέφει JWT token. Από εκεί και πέρα ο client θα στέλνει 
-# το token στο Authorization header.
 from __future__ import annotations
 
 import os
@@ -30,11 +20,6 @@ BLOCK_SECONDS = 60
 
 
 def _cookie_secure() -> bool:
-    """
-    Σε production (HTTPS) θέλουμε secure cookies.
-    Στο Render βάλε COOKIE_SECURE=1.
-    Τοπικά άστο κενό ή 0 αν θες να δουλεύει και σε http://localhost.
-    """
     v = os.getenv("COOKIE_SECURE", "").strip()
     if v == "":
         env = os.getenv("ENV", os.getenv("APP_ENV", "dev")).lower().strip()

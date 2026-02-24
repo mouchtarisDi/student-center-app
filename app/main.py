@@ -38,14 +38,6 @@ app.include_router(web.router)
 
 @app.on_event("startup")
 def on_startup() -> None:
-    # """
-    # - Δημιουργεί tables στο startup
-    # - Κάνει seed default δεδομένα (μόνο αν χρειάζεται)
-
-    # Σημείωση:
-    # Αποφεύγουμε init/seed στο import-time, γιατί σε production (workers/reload)
-    # μπορεί να τρέξει πολλές φορές με περίεργο timing.
-    # """
     Base.metadata.create_all(bind=engine)
 
     # Seed μόνο αν είναι ενεργό (default: ναι)
