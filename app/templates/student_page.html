@@ -116,11 +116,11 @@
             <div>Υπόλοιπο</div>
           </div>
           {% for x in services_info %}
-            <div class="tr">
+            <div class="tr" data-service-id="{{ x.service.id }}">
               <div>{{ x.service.name }}</div>
-              <div>{{ x.total }}</div>
-              <div>{{ x.completed }}</div>
-              <div><b>{{ x.remaining }}</b></div>
+              <div class="svc-total">{{ x.total }}</div>
+              <div class="svc-completed">{{ x.completed }}</div>
+              <div><b class="svc-remaining">{{ x.remaining }}</b></div>
             </div>
           {% endfor %}
         </div>
@@ -223,18 +223,42 @@
   <div class="card-body">
     {% if appointments and appointments|length > 0 %}
       <div class="table">
-        <div class="tr th" style="grid-template-columns: 1fr .7fr 1fr .8fr;">
+        <div class="tr th student-appt-grid">
           <div>Ημερομηνία</div>
           <div>Ώρα</div>
           <div>Υπηρεσία</div>
           <div>Κατάσταση</div>
+          <div style="text-align:right;">Ενέργειες</div>
         </div>
         {% for a in appointments %}
-          <div class="tr" style="grid-template-columns: 1fr .7fr 1fr .8fr;">
+          <div class="tr student-appt-grid" id="appt-row-{{ a.id }}" data-service-id="{{ a.service_id }}">
             <div>{{ fmt_date_gr(a.date) }}</div>
             <div>{{ a.time }}</div>
             <div>{{ a.service.name if a.service else '-' }}</div>
-            <div class="status {{ a.status }}">{{ a.status }}</div>
+            <div class="status {{ a.status }} appt-status">{{ a.status }}</div>
+            <div class="row-actions">
+              {% if a.status == "scheduled" %}
+                <button
+                  class="icon-pill icon-success"
+                  type="button"
+                  title="Ολοκλήρωση"
+                  aria-label="Ολοκλήρωση"
+                  onclick="updateAppointmentStatus({{ a.id }}, 'completed')"
+                >
+                  <span class="material-icons-outlined">check</span>
+                </button>
+
+                <button
+                  class="icon-pill icon-danger"
+                  type="button"
+                  title="Ακύρωση"
+                  aria-label="Ακύρωση"
+                  onclick="updateAppointmentStatus({{ a.id }}, 'canceled')"
+                >
+                  <span class="material-icons-outlined">close</span>
+                </button>
+              {% endif %}
+            </div>
           </div>
         {% endfor %}
       </div>
@@ -372,5 +396,78 @@
       closePaymentModal();
     }
   });
+
+  // -------------------------------
+  // AJAX: ολοκλήρωση/ακύρωση συνεδρίας (χωρίς refresh)
+  // + auto-update στους μετρητές "Συνεδρίες ανά Υπηρεσία"
+  // -------------------------------
+  async function updateAppointmentStatus(appointmentId, newStatus){
+    if(newStatus === 'canceled'){
+      const ok = confirm('Σίγουρα ακύρωση συνεδρίας;');
+      if(!ok) return;
+    }
+
+    const row = document.getElementById(`appt-row-${appointmentId}`);
+    const serviceId = row ? row.dataset.serviceId : null;
+
+    try{
+      const formData = new FormData();
+      formData.append('status', newStatus);
+      formData.append('next', window.location.pathname + window.location.search);
+
+      const res = await fetch(`/schedule/${appointmentId}/status`, {
+        method: 'POST',
+        headers: {
+          'x-requested-with': 'XMLHttpRequest',
+          'accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if(!data.ok){
+        alert('Κάτι πήγε στραβά. Δοκίμασε ξανά.');
+        return;
+      }
+
+      // 1) ενημέρωση γραμμής
+      if(row){
+        if(data.action === 'deleted'){
+          row.remove();
+        }else{
+          const statusEl = row.querySelector('.appt-status');
+          if(statusEl){
+            statusEl.textContent = data.new_status;
+            statusEl.className = `status ${data.new_status} appt-status`;
+          }
+
+          // αφαιρούμε τα κουμπιά αν έγινε completed
+          const actions = row.querySelector('.row-actions');
+          if(actions && data.new_status !== 'scheduled') actions.innerHTML = '';
+        }
+      }
+
+      // 2) auto-update μετρητών "Συνεδρίες ανά Υπηρεσία"
+      if(data.service_stats && serviceId){
+        const svcRow = document.querySelector(`.card .tr[data-service-id="${serviceId}"]`);
+        if(svcRow){
+          const totalEl = svcRow.querySelector('.svc-total');
+          const completedEl = svcRow.querySelector('.svc-completed');
+          const remainingEl = svcRow.querySelector('.svc-remaining');
+
+          if(totalEl) totalEl.textContent = data.service_stats.total;
+          if(completedEl) completedEl.textContent = data.service_stats.completed;
+          if(remainingEl) remainingEl.textContent = data.service_stats.remaining;
+        }
+      }
+
+    }catch(err){
+      console.error(err);
+      alert('Σφάλμα δικτύου. Δοκίμασε ξανά.');
+    }
+  }
+
+  // expose
+  window.updateAppointmentStatus = updateAppointmentStatus;
 </script>
 {% endblock %}

@@ -5,7 +5,7 @@ from datetime import date, datetime, time, timedelta
 from calendar import monthrange
 
 from fastapi import APIRouter, Depends, Form, Request, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from starlette.templating import Jinja2Templates
 
 from sqlalchemy.orm import Session, joinedload
@@ -803,14 +803,16 @@ def schedule_create_batch(
     requested = max(int(count or 0), 0)
     to_create = min(requested, remaining)
 
+    base_url = f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}"
+
     if to_create <= 0:
+        # Δεν υπάρχουν διαθέσιμες συνεδρίες για την υπηρεσία
         return RedirectResponse(
-            f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&no_sessions=1",
+            f"{base_url}&no_sessions=1&requested={requested}&remaining={remaining}",
             status_code=303,
         )
 
     skip = bool(skip_holidays)  # checked => "on"
-
     created = 0
     cur_day = d0
 
@@ -848,15 +850,22 @@ def schedule_create_batch(
     # κάνουμε commit όσες δημιουργήθηκαν και ενημερώνουμε με flag.
     db.commit()
 
-    # Αν κόπηκε λόγω λήξης, δείχνουμε μήνυμα
+    # Αν δεν μπορέσαμε να δημιουργήσουμε όσες ζητήθηκαν (π.χ. γιατί φτάσαμε τη λήξη γνωμάτευσης)
     if created < to_create:
         return RedirectResponse(
-            f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&partial=1&created={created}",
+            f"{base_url}&partial=1&created={created}&requested={requested}&remaining={remaining}",
+            status_code=303,
+        )
+
+    # Αν ο χρήστης ζήτησε περισσότερες από όσες δικαιούται, δημιουργούμε όσες επιτρέπονται και το λέμε καθαρά
+    if requested > remaining:
+        return RedirectResponse(
+            f"{base_url}&capped=1&created={created}&requested={requested}&remaining={remaining}",
             status_code=303,
         )
 
     return RedirectResponse(
-        f"/schedule?center={st_center}&week={start_of_week(d0).isoformat()}&ok=1",
+        f"{base_url}&ok=1&created={created}",
         status_code=303,
     )
 
@@ -872,21 +881,86 @@ async def schedule_update_status(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    wants_json = (
+        "application/json" in (request.headers.get("accept") or "")
+        or request.headers.get("x-requested-with") == "XMLHttpRequest"
+    )
+
     ap = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not ap:
+        if wants_json:
+            return JSONResponse({"ok": False, "error": "not_found"}, status_code=404)
         return RedirectResponse("/schedule", status_code=303)
 
     if status not in {"scheduled", "completed", "canceled"}:
+        if wants_json:
+            return JSONResponse({"ok": False, "error": "invalid_status"}, status_code=400)
         return RedirectResponse("/schedule", status_code=303)
+
+    student_amka = ap.student_amka
+    service_id = int(ap.service_id)
+
+    def _service_stats(student_amka: str, service_id: int):
+        link = (
+            db.query(StudentService)
+            .filter(StudentService.student_amka == student_amka)
+            .filter(StudentService.service_id == service_id)
+            .first()
+        )
+        total = int((link.total_sessions if link else 0) or 0)
+        used = (
+            db.query(Appointment.id)
+            .filter(Appointment.student_amka == student_amka)
+            .filter(Appointment.service_id == service_id)
+            .filter(Appointment.status.in_(["scheduled", "completed"]))
+            .count()
+        )
+        completed_cnt = (
+            db.query(Appointment.id)
+            .filter(Appointment.student_amka == student_amka)
+            .filter(Appointment.service_id == service_id)
+            .filter(Appointment.status == "completed")
+            .count()
+        )
+        remaining = max(total - int(used), 0)
+        return {
+            "total": total,
+            "used": int(used),
+            "completed": int(completed_cnt),
+            "remaining": int(remaining),
+        }
 
     # Ζητούμενο: όταν ακυρώνεται μια συνεδρία να "σβήνεται γενικά" (να μην φαίνεται
     # ούτε στο πρόγραμμα μαθητή). Άρα αντί για status=canceled, τη διαγράφουμε.
     if status == "canceled":
         db.delete(ap)
         db.commit()
+        if wants_json:
+            return JSONResponse(
+                {
+                    "ok": True,
+                    "appointment_id": appointment_id,
+                    "action": "deleted",
+                    "student_amka": student_amka,
+                    "service_id": service_id,
+                    "service_stats": _service_stats(student_amka, service_id),
+                }
+            )
     else:
         ap.status = status
         db.commit()
+        if wants_json:
+            return JSONResponse(
+                {
+                    "ok": True,
+                    "appointment_id": appointment_id,
+                    "action": "updated",
+                    "new_status": status,
+                    "student_amka": student_amka,
+                    "service_id": service_id,
+                    "service_stats": _service_stats(student_amka, service_id),
+                }
+            )
 
     form = await request.form()
     next_url = (form.get("next") or "").strip()

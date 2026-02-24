@@ -159,13 +159,6 @@ html[data-theme="dark"] .topbar-btn{
   z-index: 50;
 }
 
-.sidebar{
-  position: sticky;
-  top: 64px;              /* αν το topbar σου είναι ~64px */
-  height: calc(100vh - 64px);
-  overflow: auto;
-}
-
 /* -----------------------------
    Students list cards + modal
 ------------------------------ */
@@ -376,7 +369,7 @@ html[data-theme="dark"] .topbar-btn{
 .sidebar{
   position: sticky;
   top: 64px;
-  height: 100vh;
+  height: calc(100vh - 64px);
   background: var(--sidebar-bg);
   color: var(--sidebar-text);
   padding: 14px;
@@ -1284,6 +1277,12 @@ html[data-theme="dark"] .ap-chip{
   display:flex;
   gap: 6px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+/* Πίνακας "Πρόγραμμα Μαθητή" (actions column) */
+.student-appt-grid{
+  grid-template-columns: 1fr .7fr 1fr .8fr auto !important;
   align-items: center;
 }
 
@@ -2379,3 +2378,35 @@ html[data-theme="dark"] .icon-pill{
 @media (max-width: 700px){
   .payments-scroll{ max-height: 260px; }
 }
+
+/* ============================================================
+   Student page: appointments actions (AJAX) layout
+   ============================================================ */
+.student-appts-grid{
+  grid-template-columns: 1fr .7fr 1fr .8fr auto !important;
+  align-items: center;
+}
+
+@media (max-width: 700px){
+  .student-appts-grid{
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* ===== Notices (Schedule messages) ===== */
+.notice{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background: rgba(255,255,255,.55);
+  margin: 0 0 14px;
+}
+html[data-theme="dark"] .notice{ background: rgba(255,255,255,.06); }
+.notice .material-icons-outlined{ font-size:20px; opacity:.9; margin-top:1px; }
+.notice-success{ border-color: rgba(27,127,58,.25); }
+.notice-warn{ border-color: rgba(180,120,0,.28); }
+.notice-error{ border-color: rgba(214,69,69,.35); }

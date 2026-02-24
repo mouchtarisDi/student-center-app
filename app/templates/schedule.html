@@ -9,6 +9,51 @@
   </div>
 </div>
 
+{% set qp = request.query_params %}
+{% if qp.get("ok") %}
+  <div class="notice notice-success">
+    <span class="material-icons-outlined">check_circle</span>
+    <div>Οι συνεδρίες προγραμματίστηκαν επιτυχώς (δημιουργήθηκαν: <b>{{ qp.get("created") }}</b>).</div>
+  </div>
+{% elif qp.get("capped") %}
+  <div class="notice notice-warn">
+    <span class="material-icons-outlined">info</span>
+    <div>
+      Ζήτησες <b>{{ qp.get("requested") }}</b> συνεδρίες, αλλά ο μαθητής δικαιούται άλλες <b>{{ qp.get("remaining") }}</b> για αυτή την υπηρεσία. 
+      Προγραμματίστηκαν <b>{{ qp.get("created") }}</b>.
+    </div>
+  </div>
+{% elif qp.get("partial") %}
+  <div class="notice notice-warn">
+    <span class="material-icons-outlined">event_busy</span>
+    <div>
+      Δεν ήταν δυνατό να προγραμματιστούν όλες οι συνεδρίες (πιθανόν λόγω λήξης γνωμάτευσης). 
+      Δημιουργήθηκαν <b>{{ qp.get("created") }}</b> από <b>{{ qp.get("requested") }}</b>.
+    </div>
+  </div>
+{% elif qp.get("no_sessions") %}
+  <div class="notice notice-warn">
+    <span class="material-icons-outlined">block</span>
+    <div>Δεν υπάρχουν διαθέσιμες συνεδρίες για αυτή την υπηρεσία (υπόλοιπο: <b>{{ qp.get("remaining") }}</b>).</div>
+  </div>
+{% elif qp.get("error") == "expiry_limit" %}
+  <div class="notice notice-error">
+    <span class="material-icons-outlined">warning</span>
+    <div>Η ημερομηνία έναρξης είναι μετά τη λήξη της γνωμάτευσης. Δεν δημιουργήθηκε καμία συνεδρία.</div>
+  </div>
+{% elif qp.get("error") == "service_not_assigned" %}
+  <div class="notice notice-error">
+    <span class="material-icons-outlined">warning</span>
+    <div>Ο μαθητής δεν έχει ενεργοποιημένη αυτή την υπηρεσία. Δεν δημιουργήθηκε καμία συνεδρία.</div>
+  </div>
+{% elif qp.get("error") %}
+  <div class="notice notice-error">
+    <span class="material-icons-outlined">warning</span>
+    <div>Κάτι πήγε στραβά ({{ qp.get("error") }}).</div>
+  </div>
+{% endif %}
+
+
 <!-- ============ ADD SESSION (BATCH) CARD ============ -->
 <div class="card">
   <div class="card-head">
