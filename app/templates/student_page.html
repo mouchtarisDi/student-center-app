@@ -232,8 +232,8 @@
         </div>
         {% for a in appointments %}
           <div class="tr student-appt-grid" id="appt-row-{{ a.id }}" data-service-id="{{ a.service_id }}">
-            <div>{{ fmt_date_gr(a.date) }}</div>
-            <div>{{ a.time }}</div>
+            <div>{{ fmt_date_gr(a.day) if a.day else '-' }}</div>
+            <div>{{ a.start_time.strftime('%H:%M') if a.start_time else '-' }}</div>
             <div>{{ a.service.name if a.service else '-' }}</div>
             <div class="status {{ a.status }} appt-status">{{ a.status }}</div>
             <div class="row-actions">

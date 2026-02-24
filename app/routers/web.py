@@ -10,7 +10,7 @@ from starlette.templating import Jinja2Templates
 
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from ..db import get_db
 from ..deps import get_current_user
@@ -411,10 +411,18 @@ def student_page(
             }
         )
 
+
     appointments = (
         db.query(Appointment)
         .filter(Appointment.student_amka == amka)
-        .order_by(Appointment.day.desc(), Appointment.start_time.desc())
+        .order_by(
+            case(
+                (Appointment.status == "scheduled", 0),
+                (Appointment.status == "completed", 1),
+            ),
+            Appointment.day.asc(),
+            Appointment.start_time.asc(),
+        )
         .all()
     )
 

@@ -788,7 +788,11 @@ input:focus, select:focus, textarea:focus{
   font-weight: 800;
 }
 .btn-primary{
-  background: rgba(20, 140, 130, .16);
+  background: var(--teal-700);
+  font-weight: 700;
+}
+.btn-primary:hover{
+  background: var(--teal-800);
 }
 html[data-theme="dark"] .btn-primary{
   background: rgba(70, 210, 190, .14);
