@@ -48,12 +48,6 @@ def seed_users(db: Session) -> None:
     # Αν δεν υπήρχε τίποτα να γίνει, δεν πειράζει, απλά commit δεν “πονάει”
     db.commit()
 
-    print("SEED_USERS RUNNING")
-    print("ADMIN_USERNAME:", os.getenv("ADMIN_USERNAME"))
-    print("ADMIN_PASSWORD SET:", bool(os.getenv("ADMIN_PASSWORD")))
-
-print("ADMIN_USERNAME:", os.getenv("ADMIN_USERNAME"))
-print("ADMIN_PASSWORD SET:", bool(os.getenv("ADMIN_PASSWORD")))
 
 def seed_services(db: Session) -> None:
     existing = {name for (name,) in db.query(Service.name).all()}
