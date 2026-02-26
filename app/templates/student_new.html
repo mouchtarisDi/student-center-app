@@ -18,6 +18,18 @@
   </div>
 
   <div class="card-body">
+    {% if request.query_params.get('exists') == '1' %}
+      <div class="alert alert-danger" role="alert">
+        Υπάρχει ήδη μαθητής με αυτό το <strong>ΑΜΚΑ</strong>. Παρακαλώ έλεγξε το ΑΜΚΑ ή άνοιξε τον ήδη υπάρχοντα μαθητή.
+      </div>
+    {% endif %}
+
+    {% if request.query_params.get('error') == '1' %}
+      <div class="alert alert-danger" role="alert">
+        Συμπλήρωσε τα υποχρεωτικά πεδία (ΑΜΚΑ, Όνομα, Επώνυμο).
+      </div>
+    {% endif %}
+
     <form class="form-grid" method="post" action="/students/new">
 
       <div class="grid-3">

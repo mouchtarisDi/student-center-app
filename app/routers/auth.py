@@ -86,7 +86,7 @@ def web_login(
         samesite="lax",
         secure=_cookie_secure(),
         path="/",
-        max_age=60 * 60 * 12,
+        max_age=60 * 60 * 5,
     )
     return resp
 

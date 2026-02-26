@@ -272,6 +272,7 @@ async def student_create(
     form = await request.form()
 
     amka = (form.get("amka") or "").strip()
+    amka = amka.replace(" ", "").replace("-", "")
     center = normalize_center(form.get("center") or "Giannitsa")
 
     first_name = (form.get("first_name") or "").strip()
@@ -286,6 +287,11 @@ async def student_create(
 
     if not amka or not first_name or not last_name:
         return RedirectResponse("/students/new?error=1", status_code=303)
+
+    # AMKA unique check (για καθαρό μήνυμα στο UI)
+    existing = db.query(Student).filter(Student.amka == amka).first()
+    if existing:
+        return RedirectResponse("/students/new?exists=1", status_code=303)
 
     st = Student(
         amka=amka,
@@ -338,9 +344,6 @@ def delete_student(
     if not student:
         return RedirectResponse(url="/students", status_code=303)
 
-    # Αν ΔΕΝ έχεις cascade deletes στις relationships,
-    # σβήνουμε πρώτα τα "παιδιά" (payments/appointments).
-    # Αν έχεις cascade, αυτά δεν πειράζουν, απλά δεν βλάπτουν.
 
     try:
         # Payments
@@ -351,8 +354,7 @@ def delete_student(
         if "Appointment" in globals():
             db.query(Appointment).filter(Appointment.student_amka == amka).delete(synchronize_session=False)
 
-        # Αν έχεις κι άλλα tables που συνδέονται με student_amka,
-        # πρόσθεσε παρόμοιες γραμμές εδώ.
+       
 
         db.delete(student)
         db.commit()
@@ -459,10 +461,7 @@ def edit_student_comment(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """
-    Επεξεργασία σχολίου μαθητή (admin_comment).
-    Αν σταλεί κενό/whitespace, το σχόλιο γίνεται NULL.
-    """
+
     st = db.query(Student).filter(Student.amka == amka).first()
     if not st:
         return RedirectResponse("/students", status_code=303)
@@ -962,8 +961,6 @@ async def schedule_update_status(
             "remaining": int(remaining),
         }
 
-    # Ζητούμενο: όταν ακυρώνεται μια συνεδρία να "σβήνεται γενικά" (να μην φαίνεται
-    # ούτε στο πρόγραμμα μαθητή). Άρα αντί για status=canceled, τη διαγράφουμε.
     if status == "canceled":
         db.delete(ap)
         db.commit()

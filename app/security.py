@@ -9,7 +9,7 @@ import jwt
 
 SECRET_KEY = os.getenv("SECRET_KEY", "Dimouch.220133_2004.studentcenterapp!?")  # ΠΡΟΣΟΧΗ: Μην χρησιμοποιείς αυτό το default σε production!
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 12
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 5
 
 
 def hash_password(password: str) -> str:

@@ -2445,3 +2445,22 @@ html[data-theme="dark"] .notice{ background: rgba(255,255,255,.06); }
 .notice-success{ border-color: rgba(27,127,58,.25); }
 .notice-warn{ border-color: rgba(180,120,0,.28); }
 .notice-error{ border-color: rgba(214,69,69,.35); }
+
+/* ===== Alerts (Form messages) ===== */
+.alert{
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.alert-danger{
+  border-color: rgba(214,69,69,.45);
+  background: rgba(214,69,69,.08);
+}
+
+html[data-theme="dark"] .alert-danger{
+  background: rgba(214,69,69,.14);
+}
