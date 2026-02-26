@@ -91,7 +91,24 @@
         </div>
       </div>
 
-      <div>Σχόλια</div><div>{{ student.notes or '-' }}</div>
+      <div>Σχόλια</div>
+      <div>
+        <div class="renew-row" style="align-items:flex-start;">
+          <div style="white-space:pre-wrap; line-height:1.35;">
+            {{ student.admin_comment or '-' }}
+          </div>
+
+          <button
+            class="icon-pill"
+            type="button"
+            onclick="openCommentModal()"
+            title="Επεξεργασία σχολίου"
+            aria-label="Επεξεργασία σχολίου"
+          >
+            <span class="material-icons-outlined">edit</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -269,6 +286,58 @@
 </div>
 
 <!-- =========================
+     MODAL: Επεξεργασία Σχολίου
+     ========================= -->
+<div id="commentModal" class="modal-overlay" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Επεξεργασία Σχολίου">
+    <div class="modal-head">
+      <div class="modal-title">
+        <span class="material-icons-outlined">edit_note</span>
+        <h3>Επεξεργασία Σχολίου</h3>
+      </div>
+      <button class="icon-btn modal-close" type="button" onclick="closeCommentModal()" aria-label="Close">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <form id="commentEditForm" method="post" action="/students/{{ student.amka }}/comment/edit">
+        <label class="field">
+          <span>Σχόλιο</span>
+          <textarea id="cm_comment" name="admin_comment" rows="6" placeholder="Γράψε εδώ σχόλια για τον μαθητή..."></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <div></div>
+          <div class="modal-actions-right">
+            <button class="btn" type="button" onclick="closeCommentModal()">
+              <span class="material-icons-outlined">close</span>
+              Ακύρωση
+            </button>
+
+            <button class="btn btn-primary" type="submit">
+              <span class="material-icons-outlined">save</span>
+              Αποθήκευση
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-danger">
+        <form method="post" action="/students/{{ student.amka }}/comment/edit"
+              onsubmit="return confirm('Σίγουρα διαγραφή σχολίου;');">
+          <input type="hidden" name="admin_comment" value="">
+          <button class="btn btn-danger" type="submit">
+            <span class="material-icons-outlined">delete</span>
+            Διαγραφή σχολίου
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
      MODAL: Επεξεργασία Πληρωμής
      ========================= -->
 <div id="paymentModal" class="modal-overlay" aria-hidden="true">
@@ -349,7 +418,36 @@
     return confirm('Θέλεις να ανανεώσεις τη γνωμάτευση;');
   }
 
-  const modalEl = document.getElementById('paymentModal');
+  
+  // --- Comment modal ---
+  const commentModalEl = document.getElementById('commentModal');
+  const commentTextarea = document.getElementById('cm_comment');
+
+  // current comment (safe for quotes/newlines)
+  const currentComment = {{ (student.admin_comment or '')|tojson }};
+
+  function openCommentModal(){
+    if (!commentModalEl) return;
+    if (commentTextarea) commentTextarea.value = currentComment || '';
+    commentModalEl.setAttribute('aria-hidden', 'false');
+    commentModalEl.classList.add('open');
+    document.body.classList.add('modal-open');
+  }
+
+  function closeCommentModal(){
+    if (!commentModalEl) return;
+    commentModalEl.setAttribute('aria-hidden', 'true');
+    commentModalEl.classList.remove('open');
+    document.body.classList.remove('modal-open');
+  }
+
+  if (commentModalEl){
+    commentModalEl.addEventListener('click', (e) => {
+      if (e.target === commentModalEl) closeCommentModal();
+    });
+  }
+
+const modalEl = document.getElementById('paymentModal');
   const editForm = document.getElementById('paymentEditForm');
   const delForm = document.getElementById('paymentDeleteForm2');
 

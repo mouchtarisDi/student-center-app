@@ -450,6 +450,30 @@ def student_page(
 
 
 # -----------------------------
+# Edit student comment
+# -----------------------------
+@router.post("/students/{amka}/comment/edit")
+def edit_student_comment(
+    amka: str,
+    admin_comment: str = Form(""),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    Επεξεργασία σχολίου μαθητή (admin_comment).
+    Αν σταλεί κενό/whitespace, το σχόλιο γίνεται NULL.
+    """
+    st = db.query(Student).filter(Student.amka == amka).first()
+    if not st:
+        return RedirectResponse("/students", status_code=303)
+
+    st.admin_comment = (admin_comment or "").strip() or None
+    db.commit()
+    return RedirectResponse(f"/students/{amka}", status_code=303)
+
+
+
+# -----------------------------
 # Add payment
 # -----------------------------
 # --- PAYMENTS ---
