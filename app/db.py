@@ -6,15 +6,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
 def _normalize_database_url(url: str) -> str:
-    # """
-    # Κάποιοι providers (π.χ. Render/Heroku) μπορεί να δώσουν DATABASE_URL που ξεκινά με:
-    # postgres://
 
-    # Η SQLAlchemy θέλει:
-    # postgresql://
-
-    # Αν δεν το κάνεις normalize, η εφαρμογή μπορεί να “σκάσει” στο startup σε production.
-    # """
     if url.startswith("postgres://"):
         return url.replace("postgres://", "postgresql://", 1)
     return url
@@ -24,8 +16,14 @@ def _normalize_database_url(url: str) -> str:
 _raw_url = os.getenv("DATABASE_URL", "sqlite:///./local.db")
 DATABASE_URL = _normalize_database_url(_raw_url)
 
+DB_SCHEMA = os.getenv("DB_SCHEMA", "").strip()  # "prod" ή "demo" (ή κενό)
+
 # SQLite χρειάζεται special connect_args
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+
+# Postgres: βάλε search_path ώστε ΟΛΑ τα queries/DDL να “βλέπουν” το σωστό schema
+if (not DATABASE_URL.startswith("sqlite")) and DB_SCHEMA:
+    connect_args = {"options": f"-csearch_path={DB_SCHEMA}"}
 
 engine = create_engine(
     DATABASE_URL,
