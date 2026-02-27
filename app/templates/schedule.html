@@ -269,13 +269,18 @@
     </div>
 
     <div class="card-body">
-      <div class="grid-3">
+      <div class="grid-4">
+        <label class="field">
+          <span>Αναζήτηση μαθητή</span>
+          <input id="monthStudentSearch" type="text" placeholder="Πληκτρολόγησε όνομα ή ΑΜΚΑ…" autocomplete="off">
+        </label>
+
         <label class="field">
           <span>Μαθητής</span>
           <select id="monthStudent">
             <option value="" disabled selected>Επιλογή μαθητή</option>
             {% for st in students %}
-              <option value="{{ st.amka }}">{{ st.full_name }}</option>
+              <option value="{{ st.amka }}" data-search="{{ (st.full_name ~ ' ' ~ st.amka)|lower }}">{{ st.full_name }} ({{ st.amka }})</option>
             {% endfor %}
           </select>
         </label>
@@ -422,6 +427,65 @@
   const LS_MONTH_ST = "schedule.monthStudent";
   const LS_MONTH_PICK = "schedule.monthPick";
 
+
+  // -------- Student search filters (dropdown filtering) --------
+  function attachSelectFilter(searchInput, selectEl) {
+    if (!searchInput || !selectEl) return;
+
+    const allOptions = Array.from(selectEl.options).map(opt => ({
+      value: opt.value,
+      text: opt.textContent || "",
+      disabled: opt.disabled,
+      selected: opt.selected,
+      search: (opt.getAttribute("data-search") || (opt.textContent || "")).toLowerCase(),
+    }));
+
+    function render(list) {
+      const current = selectEl.value;
+      selectEl.innerHTML = "";
+      for (const o of list) {
+        const opt = document.createElement("option");
+        opt.value = o.value;
+        opt.textContent = o.text;
+        opt.disabled = o.disabled;
+        selectEl.appendChild(opt);
+      }
+      // keep selection if still exists
+      const keep = Array.from(selectEl.options).some(o => o.value === current);
+      if (keep) selectEl.value = current;
+      else if (selectEl.options.length) selectEl.selectedIndex = 0;
+    }
+
+    function filter() {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      if (!q) return render(allOptions);
+      const filtered = allOptions.filter(o => o.search.includes(q));
+      render(filtered);
+    }
+
+    searchInput.addEventListener("input", filter);
+
+    // Enter -> select first visible option and trigger change
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (selectEl.options.length > 0) {
+          selectEl.selectedIndex = 0;
+          selectEl.dispatchEvent(new Event("change"));
+        }
+      }
+    });
+  }
+
+  // Batch create form student search (already exists in HTML)
+  const studentSearch = document.getElementById("studentSearch");
+  const studentSelect = document.getElementById("studentSelect");
+  attachSelectFilter(studentSearch, studentSelect);
+
+  // Monthly view student search
+  const monthStudentSearch = document.getElementById("monthStudentSearch");
+  attachSelectFilter(monthStudentSearch, monthStudent);
+
   function setActive(btnOn, btnOff) {
     btnOn.classList.add("active");
     btnOff.classList.remove("active");
@@ -490,10 +554,13 @@
       if (list.length){
         html += `<div class="mlist">`;
         for (const ap of list){
-          const t = ap.start_time ? ap.start_time.slice(0,5) : "--:--";
+          const rawTime = ap.start_time || ap.time || null;
+          const t = rawTime ? String(rawTime).slice(0,5) : "--:--";
           html += `<div class="mitem">`;
           html += `<div class="mt">${t}</div>`;
-          html += `<div class="mn">${ap.student_name || ap.student_amka}</div>`;
+          const who = ap.student_name || ap.student_amka || "";
+          const svc = ap.service ? ` · ${ap.service}` : "";
+          html += `<div class="mn">${who}${svc}</div>`;
           html += `</div>`;
         }
         html += `</div>`;

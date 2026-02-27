@@ -835,6 +835,7 @@ html[data-theme="dark"] .btn-primary{
 .form-grid{ display:grid; gap: 14px; }
 .grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .grid-3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.grid-4{ display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
 
 .field{ display:grid; gap: 6px; }
 .field > span{ font-weight: 800; opacity: .9; }
@@ -2463,4 +2464,84 @@ html[data-theme="dark"] .notice{ background: rgba(255,255,255,.06); }
 
 html[data-theme="dark"] .alert-danger{
   background: rgba(214,69,69,.14);
+}
+
+
+/* -----------------------------
+   Monthly calendar (Schedule)
+------------------------------*/
+.month-cal{
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.month-cal-head{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: rgba(0,0,0,.03);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+}
+
+.month-cal-head .mch{
+  padding: 10px 8px;
+  font-weight: 600;
+  font-size: 13px;
+  text-align: center;
+  opacity: .85;
+}
+
+.month-cal-grid{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.mcell{
+  min-height: 92px;
+  padding: 8px;
+  border-right: 1px solid rgba(0,0,0,.06);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+}
+
+.mcell:nth-child(7n){
+  border-right: none;
+}
+
+.mcell.empty{
+  background: rgba(0,0,0,.02);
+}
+
+.mday{
+  font-weight: 700;
+  font-size: 12px;
+  opacity: .75;
+  margin-bottom: 6px;
+}
+
+.mlist{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mitem{
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.03);
+}
+
+.mt{
+  font-weight: 700;
+  font-size: 12px;
+  opacity: .9;
+}
+
+.mn{
+  font-size: 12px;
+  line-height: 1.2;
+  opacity: .95;
 }

@@ -747,19 +747,22 @@ def schedule_student_month(
         .order_by(Appointment.day.asc(), Appointment.start_time.asc())
         .all()
     )
-
     items = []
+    st_name = f"{(st.first_name or '').strip()} {(st.last_name or '').strip()}".strip() or None
     for ap in aps:
         items.append(
             {
                 "day": ap.day.isoformat(),
-                "time": ap.start_time.strftime("%H:%M"),
+                # keep both keys for backwards compatibility
+                "start_time": ap.start_time.strftime("%H:%M") if ap.start_time else None,
+                "time": ap.start_time.strftime("%H:%M") if ap.start_time else None,
                 "service": ap.service.name if ap.service else f"Service #{ap.service_id}",
                 "status": ap.status,
                 "id": ap.id,
+                "student_amka": student_amka,
+                "student_name": st_name,
             }
         )
-
     return {"items": items}
 
 # -----------------------------
