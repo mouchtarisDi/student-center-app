@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 import bcrypt
 import jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "Dimouch.220133_2004.studentcenterapp!?")  # ΠΡΟΣΟΧΗ: Μην χρησιμοποιείς αυτό το default σε production!
+SECRET_KEY = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 5
 
