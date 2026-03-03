@@ -130,7 +130,7 @@
               <div class="list-main">
                 <div class="list-title">{{ st.full_name }}</div>
                 <div class="list-subtitle">
-                  Expires in <b>{{ days_left }}</b> days • {{ st.assessment_expiry_date.strftime("%d/%m/%Y") }}
+                  Expires in <b>{{ days_left }}</b> days • {{ fmt_date_gr(st.assessment_expiry_date) }}
                 </div>
               </div>
 

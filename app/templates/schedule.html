@@ -98,7 +98,7 @@
 
         <label class="field">
           <span>Ημερομηνία (1η συνεδρία)</span>
-          <input type="date" name="start_day" required>
+          <input type="text" name="start_day" class="js-date" placeholder="DD/MM/YYYY" required>
         </label>
 
         <label class="field">
@@ -160,7 +160,7 @@
         <div class="weekpick-label">Week</div>
         <div class="weekpick-row">
           <span class="material-icons-outlined">calendar_month</span>
-          <input type="date" name="week" value="{{ week_start_str }}">
+          <input type="text" name="week_pick" class="js-date" value="{{ week_start_str }}" placeholder="DD/MM/YYYY">
         </div>
       </div>
 
@@ -199,7 +199,7 @@
         <div class="day-header">
           <div class="day-title">
             {{ d.strftime("%A") }}
-            <span class="day-date">{{ d.strftime("%d/%m") }}</span>
+            <span class="day-date">{{ d.strftime("%d/%m/%Y") }}</span>
           </div>
           {% if today and key == today.isoformat() %}
             <span class="today-pill">Today</span>

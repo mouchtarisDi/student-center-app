@@ -490,11 +490,18 @@ def add_payment(amka: str,
 
     # amount -> cents
     amount_norm = amount.replace(",", ".").strip()
-    cents = int(round(float(amount_norm) * 100))
+    try:
+        cents = int(round(float(amount_norm) * 100))
+    except ValueError:
+        return RedirectResponse(url=f"/students/{student.amka}?pay_error=bad_amount", status_code=303)
+
+    pay_d = parse_date(payment_date)
+    if not pay_d:
+        return RedirectResponse(url=f"/students/{student.amka}?pay_error=bad_date", status_code=303)
 
     p = Payment(
         student_amka=student.amka,
-        payment_date=date.fromisoformat(payment_date),
+        payment_date=pay_d,
         amount_cents=cents,
         comment=(comment or "").strip() or None
     )
@@ -517,7 +524,7 @@ def edit_payment(amka: str,
 
     amount_norm = amount.replace(",", ".").strip()
     p.amount_cents = int(round(float(amount_norm) * 100))
-    p.payment_date = date.fromisoformat(payment_date)
+    p.payment_date = pay_d
     p.comment = (comment or "").strip() or None
 
     db.commit()
@@ -609,9 +616,10 @@ def schedule_page(
     user: User = Depends(get_current_user),
     center: str | None = None,
     week: str | None = None,
+    week_pick: str | None = None,
 ):
     today = date.today()
-    base = parse_date(week or "") or today
+    base = parse_date((week or week_pick or "").strip()) or today
     week_start = start_of_week(base)
     prev_week = (week_start - timedelta(days=7)).isoformat()
     next_week = (week_start + timedelta(days=7)).isoformat()
@@ -667,22 +675,22 @@ def schedule_page(
     )
     totals_map = {(amka, int(sid)): int(total or 0) for (amka, sid, total) in totals}
 
-    completed = (
+    used = (
         db.query(
             Appointment.student_amka,
             Appointment.service_id,
             func.count(Appointment.id),
         )
-        .filter(Appointment.status == "completed")
+        .filter(Appointment.status.in_(["scheduled", "completed"]))
         .group_by(Appointment.student_amka, Appointment.service_id)
         .all()
     )
-    completed_map = {(amka, int(sid)): int(cnt or 0) for (amka, sid, cnt) in completed}
+    used_map = {(amka, int(sid)): int(cnt or 0) for (amka, sid, cnt) in used}
 
     remaining_js_map: dict[str, int] = {}
     for (amka, sid), total in totals_map.items():
-        done = completed_map.get((amka, sid), 0)
-        remaining_js_map[f"{amka}|{sid}"] = max(int(total) - int(done), 0)
+        used_cnt = used_map.get((amka, sid), 0)
+        remaining_js_map[f"{amka}|{sid}"] = max(int(total) - int(used_cnt), 0)
 
     remaining_js = json.dumps(remaining_js_map)
 
@@ -705,7 +713,7 @@ def schedule_page(
             "centers": CENTERS,
             "center": center,
             "week_start": week_start,
-            "week_start_str": week_start.isoformat(),
+            "week_start_str": week_start.strftime("%d/%m/%Y"),
             "days": days,  # αν το χρειάζεσαι αλλού
             "remaining_js": remaining_js,
             "today": today,

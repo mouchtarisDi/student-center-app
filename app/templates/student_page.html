@@ -45,7 +45,7 @@
           <b>{{ fmt_date_gr(student.assessment_expiry_date) }}</b>
 
           <form method="post" action="/students/{{ student.amka }}/assessment/renew" class="renew-form">
-            <input type="date" name="assessment_expiry_date" required>
+            <input type="text" name="assessment_expiry_date" class="js-date" placeholder="DD/MM/YYYY" required>
 
             <label class="checkbox">
               <input type="checkbox" id="change_sessions_chk" name="change_sessions" value="1" onchange="toggleRenewSessions()">
@@ -162,7 +162,7 @@
         <div class="grid-2">
           <label class="field">
             <span>Ημερομηνία</span>
-            <input type="date" name="payment_date" required>
+            <input type="text" name="payment_date" class="js-date" placeholder="DD/MM/YYYY" required>
           </label>
 
           <label class="field">
@@ -357,7 +357,7 @@
         <div class="grid-2">
           <label class="field">
             <span>Ημερομηνία</span>
-            <input id="pm_date" type="date" name="payment_date" required>
+            <input id="pm_date" type="text" class="js-date" name="payment_date" placeholder="DD/MM/YYYY" required>
           </label>
 
           <label class="field">
@@ -448,6 +448,15 @@
   }
 
 const modalEl = document.getElementById('paymentModal');
+
+  function isoToGrDate(iso){
+    // iso: YYYY-MM-DD
+    if(!iso) return '';
+    const parts = iso.split('-');
+    if(parts.length !== 3) return iso;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
   const editForm = document.getElementById('paymentEditForm');
   const delForm = document.getElementById('paymentDeleteForm2');
 
@@ -462,7 +471,7 @@ const modalEl = document.getElementById('paymentModal');
     delForm.action = `/students/{{ student.amka }}/payments/${id}/delete`;
 
     // fill fields
-    document.getElementById('pm_date').value = date;
+    document.getElementById('pm_date').value = isoToGrDate(date);
     document.getElementById('pm_amount').value = amount;
     document.getElementById('pm_comment').value = comment;
 

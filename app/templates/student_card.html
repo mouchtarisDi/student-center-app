@@ -35,7 +35,7 @@
   </div>
 
   <div style="margin-top:14px; display:grid; gap:10px;">
-    <div><b>Date of birth:</b> {{ student.date_of_birth or "-" }}</div>
+    <div><b>Date of birth:</b> {{ fmt_date_gr(student.date_of_birth) }}</div>
     <div><b>Parent name:</b> {{ student.parent_name or "-" }}</div>
     <div><b>Parent phone:</b> {{ student.parent_phone or "-" }}</div>
     <div><b>Payment date:</b> {{ student.payment_date or "-" }}</div>

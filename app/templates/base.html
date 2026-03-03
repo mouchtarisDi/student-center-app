@@ -7,6 +7,8 @@
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined">
   <link rel="stylesheet" href="/static/style.css?v=8" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   {% block extra_css %}{% endblock %}
 </head>
 
@@ -92,50 +94,60 @@
   </div>
 
   <script>
-    (function () {
-      // THEME
-      const root = document.documentElement;
-      const savedTheme = localStorage.getItem("theme");
-      const themeIcon = document.getElementById("themeIcon");
+      (function () {
+        // THEME
+        const root = document.documentElement;
+        const savedTheme = localStorage.getItem("theme");
+        const themeIcon = document.getElementById("themeIcon");
 
-      function applyTheme(t){
-        root.setAttribute("data-theme", t);
-        if (themeIcon){
-          themeIcon.textContent = (t === "dark") ? "light_mode" : "dark_mode";
+        function applyTheme(t){
+          root.setAttribute("data-theme", t);
+          if (themeIcon){
+            themeIcon.textContent = (t === "dark") ? "light_mode" : "dark_mode";
+          }
         }
-      }
 
-      applyTheme(savedTheme || "light");
+        applyTheme(savedTheme || "light");
 
-      const themeToggle = document.getElementById("themeToggle");
-      if (themeToggle){
-        themeToggle.addEventListener("click", () => {
-          const current = root.getAttribute("data-theme") || "light";
-          const next = current === "dark" ? "light" : "dark";
-          localStorage.setItem("theme", next);
-          applyTheme(next);
-        });
-      }
+        const themeToggle = document.getElementById("themeToggle");
+        if (themeToggle){
+          themeToggle.addEventListener("click", () => {
+            const current = root.getAttribute("data-theme") || "light";
+            const next = current === "dark" ? "light" : "dark";
+            localStorage.setItem("theme", next);
+            applyTheme(next);
+          });
+        }
 
-      // SIDEBAR TOGGLE (μόνο όταν υπάρχει sidebar)
-      const sidebar = document.getElementById("sidebar");
-      const sidebarToggle = document.getElementById("sidebarToggle");
+        // SIDEBAR TOGGLE (μόνο όταν υπάρχει sidebar)
+        const sidebar = document.getElementById("sidebar");
+        const sidebarToggle = document.getElementById("sidebarToggle");
 
-      function setCollapsed(isCollapsed){
-        document.body.classList.toggle("sidebar-collapsed", isCollapsed);
-        localStorage.setItem("sidebarCollapsed", isCollapsed ? "1" : "0");
-      }
+        function setCollapsed(isCollapsed){
+          document.body.classList.toggle("sidebar-collapsed", isCollapsed);
+          localStorage.setItem("sidebarCollapsed", isCollapsed ? "1" : "0");
+        }
 
-      const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "1";
-      setCollapsed(savedCollapsed);
+        const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "1";
+        setCollapsed(savedCollapsed);
 
-      if (sidebar && sidebarToggle){
-        sidebarToggle.addEventListener("click", () => {
-          const nowCollapsed = !document.body.classList.contains("sidebar-collapsed");
-          setCollapsed(nowCollapsed);
-        });
-      }
-    })();
+        if (sidebar && sidebarToggle){
+          sidebarToggle.addEventListener("click", () => {
+            const nowCollapsed = !document.body.classList.contains("sidebar-collapsed");
+            setCollapsed(nowCollapsed);
+          });
+        }
+      })();
+    </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (!window.flatpickr) return;
+
+      flatpickr(".js-date", {
+        dateFormat: "d/m/Y",   // DD/MM/YYYY
+        allowInput: true,
+      });
+    });
   </script>
 
   {% block extra_js %}{% endblock %}
