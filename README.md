@@ -93,7 +93,7 @@ This project is evolving toward:
 
 ---
 
-## 👨‍💻 About the Developer
+## 👨‍💻 About Me
 
 Dimitris Mouchtaris  
 Computer Science Student  
