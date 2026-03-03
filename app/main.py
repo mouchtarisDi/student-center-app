@@ -20,6 +20,9 @@ from .deps import redirect_middleware_handler
 app = FastAPI()
 
 from fastapi import HTTPException as FastAPIHTTPException
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/assets", StaticFiles(directory="app/assets"), name="assets")
 
 
 @app.exception_handler(FastAPIHTTPException)
