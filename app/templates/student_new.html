@@ -6,6 +6,9 @@
   <div>
     <h1 class="page-title">Add Student</h1>
     <p class="page-subtitle">Καταχώρησε νέο μαθητή και τις συνεδρίες ανά υπηρεσία.</p>
+    <p style="margin-top: 8px; font-size: 0.8em; color: #555;">
+      Αν δεν υπάρχουν συνεδρίες για κάποια υπηρεσία, τότε αφήστε το πεδίο στο 0.
+    </p>
   </div>
 </div>
 
@@ -105,10 +108,12 @@
                 <span>{{ s.name }}</span>
                 <input
                   type="number"
+                  value="0"
                   min="0"
                   step="1"
                   name="sessions_{{ s.id }}"
                   placeholder="0"
+                  required
                 >
               </label>
             {% endfor %}
