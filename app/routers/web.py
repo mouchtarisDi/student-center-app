@@ -369,6 +369,7 @@ def delete_student(
 def student_page(
     amka: str,
     request: Request,
+    sort: str = Query("date_desc"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -413,20 +414,34 @@ def student_page(
             }
         )
 
-
-    appointments = (
+    appointments_query = (
         db.query(Appointment)
         .filter(Appointment.student_amka == amka)
-        .order_by(
+    )
+
+    if sort == "date_asc":
+        appointments_query = appointments_query.order_by(
             case(
                 (Appointment.status == "scheduled", 0),
                 (Appointment.status == "completed", 1),
+                else_=2,
             ),
             Appointment.day.asc(),
             Appointment.start_time.asc(),
         )
-        .all()
-    )
+    else:
+        sort = "date_desc"
+        appointments_query = appointments_query.order_by(
+            case(
+                (Appointment.status == "scheduled", 0),
+                (Appointment.status == "completed", 1),
+                else_=2,
+            ),
+            Appointment.day.desc(),
+            Appointment.start_time.desc(),
+        )
+
+    appointments = appointments_query.all()
 
     payments = (
         db.query(Payment)
@@ -447,6 +462,7 @@ def student_page(
             "payments": payments,
             "today": date.today(),
             "centers": CENTERS,
+            "sort": sort,
         },
     )
 

@@ -237,6 +237,31 @@
     </div>
   </div>
 
+  <form method="get" action="/students/{{ student.amka }}" style="display:flex; align-items:center; gap:8px; margin:0;">
+      <label for="sort" style="font-size:14px; color:#555;">Ταξινόμηση:</label>
+      <select
+        id="sort"
+        name="sort"
+        onchange="this.form.submit()"
+        style="
+          width:160px;
+          padding:8px 12px;
+          border:1px solid #d0d7de;
+          border-radius:10px;
+          background:#fff;
+          font-size:14px;
+          cursor:pointer;
+        "
+      >
+        <option value="date_desc" {% if sort == "date_desc" %}selected{% endif %}>
+          Νεότερες πρώτα
+        </option>
+        <option value="date_asc" {% if sort == "date_asc" %}selected{% endif %}>
+          Παλαιότερες πρώτα
+        </option>
+      </select>
+    </form>
+
   <div class="card-body">
     {% if appointments and appointments|length > 0 %}
       <div class="table">
