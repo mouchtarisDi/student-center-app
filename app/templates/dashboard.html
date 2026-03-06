@@ -81,7 +81,7 @@
                   {% if ap.student %}{{ ap.student.full_name }}{% else %}{{ ap.student_amka }}{% endif %}
                 </div>
                 <div class="list-subtitle">
-                  {% if ap.service %}{{ ap.service.name }}{% else %}Service #{{ ap.service_id }}{% endif %}
+                  {% if ap.service %}<span class="service-badge {{ service_badge_class(ap.service.name) }}">{{ ap.service.name }}</span>{% else %}<span class="service-badge service-badge-default">Service #{{ ap.service_id }}</span>{% endif %}
                 </div>
               </div>
 

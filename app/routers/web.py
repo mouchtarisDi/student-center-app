@@ -57,6 +57,30 @@ def fmt_date_gr(d: date | None) -> str:
 templates.env.globals["fmt_date_gr"] = fmt_date_gr
 
 
+def service_badge_class(service_name: str | None) -> str:
+    name = (service_name or "").strip().lower()
+
+    if any(x in name for x in ["speech", "λογο"]):
+        return "service-badge-speech"
+    if any(x in name for x in ["occupational", "εργο"]):
+        return "service-badge-occupational"
+    if any(x in name for x in ["behavior", "behaviour", "συμπεριφορ"]):
+        return "service-badge-behavior"
+    if any(x in name for x in ["tutoring", "μελετ"]):
+        return "service-badge-tutoring"
+    if any(x in name for x in ["psych", "ψυχ"]):
+        return "service-badge-psychology"
+    if any(x in name for x in ["special", "ειδικ"]):
+        return "service-badge-special"
+    if any(x in name for x in ["physio", "φυσιο"]):
+        return "service-badge-physio"
+
+    return "service-badge-default"
+
+
+templates.env.globals["service_badge_class"] = service_badge_class
+
+
 def parse_date(s: str) -> date | None:
     s = (s or "").strip()
     if not s:
@@ -781,6 +805,7 @@ def schedule_student_month(
                 "start_time": ap.start_time.strftime("%H:%M") if ap.start_time else None,
                 "time": ap.start_time.strftime("%H:%M") if ap.start_time else None,
                 "service": ap.service.name if ap.service else f"Service #{ap.service_id}",
+                "service_class": service_badge_class(ap.service.name if ap.service else None),
                 "status": ap.status,
                 "id": ap.id,
                 "student_amka": student_amka,

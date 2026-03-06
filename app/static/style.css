@@ -2545,3 +2545,110 @@ html[data-theme="dark"] .alert-danger{
   line-height: 1.2;
   opacity: .95;
 }
+
+
+/* ============================================================
+   Service badges (global)
+   ============================================================ */
+.service-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:5px 10px;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:700;
+  line-height:1.1;
+  border:1px solid transparent;
+  white-space:nowrap;
+  max-width:100%;
+}
+
+.service-badge-speech{
+  background:#e7ebff;
+  color:#3235d6;
+  border-color:#cccfff;
+}
+.service-badge-occupational{
+  background:#fff3cc;
+  color:#b26b00;
+  border-color:#f0d36f;
+}
+.service-badge-behavior{
+  background:#ffe1e6;
+  color:#c6284f;
+  border-color:#f3b8c4;
+}
+.service-badge-tutoring{
+  background:#dff0ff;
+  color:#1565c0;
+  border-color:#b8dafc;
+}
+.service-badge-psychology{
+  background:#e5fbf1;
+  color:#0f8a5f;
+  border-color:#b8ecd6;
+}
+.service-badge-special{
+  background:#f3ecff;
+  color:#7b3fe4;
+  border-color:#dbc9ff;
+}
+.service-badge-physio{
+  background:#ffe9d6;
+  color:#c96a12;
+  border-color:#f5cba2;
+}
+.service-badge-default{
+  background:#eef1f4;
+  color:#4f5b67;
+  border-color:#d8dee5;
+}
+
+.list-subtitle .service-badge,
+.ap-service .service-badge,
+.mn .service-badge{
+  vertical-align:middle;
+}
+
+html[data-theme="dark"] .service-badge-speech{
+  background:rgba(123,92,255,.18);
+  color:#c9b9ff;
+  border-color:rgba(170,145,255,.35);
+}
+html[data-theme="dark"] .service-badge-occupational{
+  background:rgba(214,160,17,.16);
+  color:#ffd978;
+  border-color:rgba(255,214,102,.28);
+}
+html[data-theme="dark"] .service-badge-behavior{
+  background:rgba(214,71,109,.18);
+  color:#ffb7c7;
+  border-color:rgba(255,149,175,.28);
+}
+html[data-theme="dark"] .service-badge-tutoring{
+  background:rgba(53,138,255,.18);
+  color:#9dcbff;
+  border-color:rgba(102,173,255,.28);
+}
+html[data-theme="dark"] .service-badge-psychology{
+  background:rgba(17,153,107,.18);
+  color:#8be8c2;
+  border-color:rgba(92,212,164,.28);
+}
+html[data-theme="dark"] .service-badge-special{
+  background:rgba(140,82,255,.18);
+  color:#d0b6ff;
+  border-color:rgba(188,150,255,.28);
+}
+html[data-theme="dark"] .service-badge-physio{
+  background:rgba(233,140,51,.18);
+  color:#ffcf9c;
+  border-color:rgba(255,182,112,.28);
+}
+html[data-theme="dark"] .service-badge-default{
+  background:rgba(255,255,255,.08);
+  color:#d7dee5;
+  border-color:rgba(255,255,255,.12);
+}

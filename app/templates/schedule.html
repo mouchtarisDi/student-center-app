@@ -219,7 +219,7 @@
                     {{ ap.student.full_name if ap.student else ap.student_amka }}
                   </div>
                   <div class="ap-service">
-                    {{ ap.service.name if ap.service else ("Service #" ~ ap.service_id) }}
+                    {% if ap.service %}<span class="service-badge {{ service_badge_class(ap.service.name) }}">{{ ap.service.name }}</span>{% else %}<span class="service-badge service-badge-default">{{ "Service #" ~ ap.service_id }}</span>{% endif %}
                   </div>
                 </div>
 
@@ -522,6 +522,19 @@
   monthStudent.addEventListener("change", () => localStorage.setItem(LS_MONTH_ST, monthStudent.value || ""));
   monthPick.addEventListener("change", () => localStorage.setItem(LS_MONTH_PICK, monthPick.value || ""));
 
+
+  function serviceBadgeClass(name) {
+    const n = String(name || "").trim().toLowerCase();
+    if (n.includes("speech") || n.includes("λογο")) return "service-badge-speech";
+    if (n.includes("occupational") || n.includes("εργο")) return "service-badge-occupational";
+    if (n.includes("behavior") || n.includes("behaviour") || n.includes("συμπεριφορ")) return "service-badge-behavior";
+    if (n.includes("tutoring") || n.includes("μελετ")) return "service-badge-tutoring";
+    if (n.includes("psych") || n.includes("ψυχ")) return "service-badge-psychology";
+    if (n.includes("special") || n.includes("ειδικ")) return "service-badge-special";
+    if (n.includes("physio") || n.includes("φυσιο")) return "service-badge-physio";
+    return "service-badge-default";
+  }
+
   function buildCalendar(year, month1to12, items) {
     // items grouped by day
     const byDay = {};
@@ -559,7 +572,9 @@
           html += `<div class="mitem">`;
           html += `<div class="mt">${t}</div>`;
           const who = ap.student_name || ap.student_amka || "";
-          const svc = ap.service ? ` · ${ap.service}` : "";
+          const svc = ap.service
+            ? ` <span class="service-badge ${ap.service_class || serviceBadgeClass(ap.service)}">${ap.service}</span>`
+            : "";
           html += `<div class="mn">${who}${svc}</div>`;
           html += `</div>`;
         }
