@@ -289,6 +289,7 @@ def students_page(
             "page": "students",
             "students": students,
             "centers": CENTERS,
+            "today": date.today(),
         },
     )
 

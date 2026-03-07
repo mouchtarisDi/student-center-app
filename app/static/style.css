@@ -221,6 +221,43 @@ html[data-theme="dark"] .topbar-btn{
   box-shadow: 0 8px 22px rgba(0,0,0,.08);
 }
 
+.student-mini-expired{
+  background: rgba(220, 38, 38, 0.08);
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+.student-mini-expired:hover{
+  box-shadow: 0 8px 22px rgba(220, 38, 38, 0.12);
+}
+
+
+.btn-expired-filter{
+  background: rgba(220, 38, 38, 0.05);
+  border-color: rgba(220, 38, 38, 0.14);
+  color: inherit;
+}
+
+.btn-expired-filter:hover{
+  background: rgba(220, 38, 38, 0.09);
+  border-color: rgba(220, 38, 38, 0.20);
+}
+
+.btn-expired-filter.active{
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.28);
+  color: #991b1b;
+}
+
+html[data-theme="dark"] .btn-expired-filter.active{
+  color: #fecaca;
+}
+
+.btn-danger-soft{
+  background: rgba(220, 38, 38, 0.10);
+  border-color: rgba(220, 38, 38, 0.22);
+  color: #991b1b;
+}
+
 .mini-title{
   font-weight: 800;
   margin-bottom: 4px;
