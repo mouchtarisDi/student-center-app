@@ -124,6 +124,11 @@ class StudentService(Base):
     # συνολικός αριθμός συνεδριών που έχει το πακέτο/συμφωνία του μαθητή για την υπηρεσία
     total_sessions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
+    # χρονική στιγμή από την οποία ξεκινά να μετρά ο τρέχων κύκλος συνεδριών
+    # (στην ανανέωση γνωμάτευσης γίνεται reset εδώ, ώστε οι παλιές ολοκληρωμένες
+    # να παραμένουν στο ιστορικό αλλά να μη συμμετέχουν στα νέα υπόλοιπα)
+    sessions_reset_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     student: Mapped["Student"] = relationship(back_populates="services")
     service: Mapped["Service"] = relationship(back_populates="student_links")
 

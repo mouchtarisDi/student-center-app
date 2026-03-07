@@ -119,6 +119,38 @@ def is_holiday(db: Session, center: str, d: date) -> bool:
         is not None
     )
 
+
+def _current_cycle_cutoff(ss: StudentService) -> datetime | None:
+    return getattr(ss, "sessions_reset_at", None)
+
+
+def _appointments_in_current_cycle_query(db: Session, ss: StudentService):
+    q = (
+        db.query(Appointment)
+        .filter(Appointment.student_amka == ss.student_amka)
+        .filter(Appointment.service_id == ss.service_id)
+    )
+    cutoff = _current_cycle_cutoff(ss)
+    if cutoff is not None:
+        q = q.filter(Appointment.created_at >= cutoff)
+    return q
+
+
+def _count_used_in_current_cycle(db: Session, ss: StudentService) -> int:
+    return (
+        _appointments_in_current_cycle_query(db, ss)
+        .filter(Appointment.status.in_(["scheduled", "completed"]))
+        .count()
+    )
+
+
+def _count_completed_in_current_cycle(db: Session, ss: StudentService) -> int:
+    return (
+        _appointments_in_current_cycle_query(db, ss)
+        .filter(Appointment.status == "completed")
+        .count()
+    )
+
 def _remaining_sessions(ss: StudentService) -> int:
     """
     Επιστρέφει πόσες συνεδρίες απομένουν για το συγκεκριμένο StudentService.
@@ -410,23 +442,8 @@ def student_page(
     services_info = []
     for l in links:
         total = int(l.total_sessions or 0)
-
-        used = (
-            db.query(Appointment.id)
-            .filter(Appointment.student_amka == amka)
-            .filter(Appointment.service_id == l.service_id)
-            .filter(Appointment.status.in_(["scheduled", "completed"]))
-            .count()
-        )
-
-        completed = (
-            db.query(Appointment.id)
-            .filter(Appointment.student_amka == amka)
-            .filter(Appointment.service_id == l.service_id)
-            .filter(Appointment.status == "completed")
-            .count()
-        )
-
+        used = _count_used_in_current_cycle(db, l)
+        completed = _count_completed_in_current_cycle(db, l)
         remaining = max(total - int(used), 0)
 
         services_info.append(
@@ -616,15 +633,9 @@ async def renew_assessment(
         .all()
     )
 
-    for link in links:
-        used_count = (
-            db.query(Appointment.id)
-            .filter(Appointment.student_amka == amka)
-            .filter(Appointment.service_id == link.service_id)
-            .filter(Appointment.status.in_(["scheduled", "completed"]))
-            .count()
-        )
+    renewal_timestamp = datetime.utcnow()
 
+    for link in links:
         old_declared = int(link.total_sessions or 0)
 
         if change_sessions:
@@ -638,7 +649,12 @@ async def renew_assessment(
         else:
             desired_available = old_declared
 
-        link.total_sessions = int(desired_available) + int(used_count)
+        # Στην ανανέωση κάνουμε RESET του τρέχοντος κύκλου:
+        # - οι διαθέσιμες γίνονται ακριβώς όσες δήλωσε ο χρήστης
+        # - οι ολοκληρωμένες ξεκινούν από 0
+        # - τα παλιά ραντεβού παραμένουν ορατά στο ιστορικό του μαθητή
+        link.total_sessions = int(desired_available)
+        link.sessions_reset_at = renewal_timestamp
 
     st.assessment_expiry_date = d
     db.commit()
@@ -705,32 +721,13 @@ def schedule_page(
     # ✅ Remaining sessions map (για schedule.html JS)
     # remaining = total_sessions - completed
     # -------------------------------------------------
-    totals = (
-        db.query(
-            StudentService.student_amka,
-            StudentService.service_id,
-            func.coalesce(StudentService.total_sessions, 0),
-        )
-        .all()
-    )
-    totals_map = {(amka, int(sid)): int(total or 0) for (amka, sid, total) in totals}
-
-    used = (
-        db.query(
-            Appointment.student_amka,
-            Appointment.service_id,
-            func.count(Appointment.id),
-        )
-        .filter(Appointment.status.in_(["scheduled", "completed"]))
-        .group_by(Appointment.student_amka, Appointment.service_id)
-        .all()
-    )
-    used_map = {(amka, int(sid)): int(cnt or 0) for (amka, sid, cnt) in used}
+    links_for_remaining = db.query(StudentService).all()
 
     remaining_js_map: dict[str, int] = {}
-    for (amka, sid), total in totals_map.items():
-        used_cnt = used_map.get((amka, sid), 0)
-        remaining_js_map[f"{amka}|{sid}"] = max(int(total) - int(used_cnt), 0)
+    for link in links_for_remaining:
+        total = int(link.total_sessions or 0)
+        used_cnt = _count_used_in_current_cycle(db, link)
+        remaining_js_map[f"{link.student_amka}|{int(link.service_id)}"] = max(int(total) - int(used_cnt), 0)
 
     remaining_js = json.dumps(remaining_js_map)
 
@@ -872,14 +869,8 @@ def schedule_create_batch(
 
     total_allowed = int(link.total_sessions or 0)
 
-    # Μετράμε ήδη scheduled+completed ώστε να μην ξεπερνάμε
-    used = (
-        db.query(Appointment.id)
-        .filter(Appointment.student_amka == st.amka)
-        .filter(Appointment.service_id == svc.id)
-        .filter(Appointment.status.in_(["scheduled", "completed"]))
-        .count()
-    )
+    # Μετράμε μόνο scheduled+completed του ΤΡΕΧΟΝΤΟΣ κύκλου συνεδριών
+    used = _count_used_in_current_cycle(db, link)
 
     remaining = max(total_allowed - int(used), 0)
 
@@ -991,20 +982,8 @@ async def schedule_update_status(
             .first()
         )
         total = int((link.total_sessions if link else 0) or 0)
-        used = (
-            db.query(Appointment.id)
-            .filter(Appointment.student_amka == student_amka)
-            .filter(Appointment.service_id == service_id)
-            .filter(Appointment.status.in_(["scheduled", "completed"]))
-            .count()
-        )
-        completed_cnt = (
-            db.query(Appointment.id)
-            .filter(Appointment.student_amka == student_amka)
-            .filter(Appointment.service_id == service_id)
-            .filter(Appointment.status == "completed")
-            .count()
-        )
+        used = _count_used_in_current_cycle(db, link) if link else 0
+        completed_cnt = _count_completed_in_current_cycle(db, link) if link else 0
         remaining = max(total - int(used), 0)
         return {
             "total": total,

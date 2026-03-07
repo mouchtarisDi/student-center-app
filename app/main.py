@@ -6,7 +6,28 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from sqlalchemy import text
+from sqlalchemy import text, inspect
+
+
+def _apply_runtime_migrations() -> None:
+    """
+    Πολύ μικρές runtime migrations για περιβάλλον χωρίς Alembic.
+    Προσθέτουμε το student_services.sessions_reset_at αν λείπει.
+    """
+    inspector = inspect(engine)
+    try:
+        columns = {col["name"] for col in inspector.get_columns("student_services")}
+    except Exception:
+        return
+
+    if "sessions_reset_at" not in columns:
+        ddl = (
+            'ALTER TABLE student_services ADD COLUMN sessions_reset_at DATETIME'
+            if str(engine.url).startswith("sqlite")
+            else 'ALTER TABLE student_services ADD COLUMN sessions_reset_at TIMESTAMP NULL'
+        )
+        with engine.begin() as conn:
+            conn.execute(text(ddl))
 
 from .db import Base, engine, SessionLocal
 from .seed import seed_all
@@ -65,6 +86,7 @@ def on_startup() -> None:
 
     # Δημιουργία tables στο σωστό schema (λόγω search_path στο db.py)
     Base.metadata.create_all(bind=engine)
+    _apply_runtime_migrations()
 
     # Seed μόνο αν είναι ενεργό (default: ναι)
     seed_enabled = os.getenv("SEED_DB_ON_STARTUP", "1").strip() not in {
