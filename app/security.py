@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Dict, Any
 
 import bcrypt
 import jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "")
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 5
 
@@ -26,14 +26,16 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_access_token(subject: str, role: str, expires_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES) -> str:
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     exp = now + timedelta(minutes=expires_minutes)
+
     payload: Dict[str, Any] = {
         "sub": subject,
         "role": role,
         "iat": int(now.timestamp()),
         "exp": int(exp.timestamp()),
     }
+
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -41,5 +43,6 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except Exception:
+    except Exception as e:
+        print("JWT decode error:", repr(e))
         return None
