@@ -1,4 +1,8 @@
-# 🧠 Therapy Center Manager
+# 🧠 [Therapy Center Manager](https://student-center-app-1.onrender.com)
+
+Credentials:
+username: demo
+password: Demo123
 
 > Turning paper-based therapy centers into structured digital systems.
 
