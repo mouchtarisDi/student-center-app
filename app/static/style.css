@@ -1853,7 +1853,7 @@ html[data-theme="dark"] .ap-chip{
 }
 
 @media (min-width: 1500px){
-  .weekly-list{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .weekly-list{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* Tablet: 2 columns */
